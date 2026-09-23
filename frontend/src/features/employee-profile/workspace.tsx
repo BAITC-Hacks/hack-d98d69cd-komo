@@ -11,6 +11,8 @@ import { ActivityHistory } from '@/features/activities/history';
 import { ActivityDialog } from '@/features/activities/activity-dialog';
 import { Recommendations, formatLabels } from '@/features/recommendations/recommendations';
 import s from './workspace.module.css';
+import { AccessPanel } from './access-panel';
+import { randomToken } from '@/shared/lib/random';
 
 export function EmployeeWorkspace({ employeeId }: { employeeId?: string }) {
   const { user } = useAuth(); const router = useRouter(); const id = employeeId || user?.employee_id;
@@ -54,9 +56,9 @@ export function EmployeeWorkspace({ employeeId }: { employeeId?: string }) {
   async function mutate(action: 'start' | 'complete' | 'cancel', activity: ActivityOption, sessionDate?: string) {
     if (!id || busy || readOnly) return; setBusy(true); setActionError(''); setError(''); setSuccess('');
     const signature = `${action}:${activity.event_id}:${activity.record_id || ''}:${sessionDate || ''}`;
-    const key = keys.current[signature] ||= crypto.randomUUID();
     const path = action === 'cancel' ? `/employees/${id}/participations/${activity.record_id}/cancel` : `/employees/${id}/activities/${activity.event_id}/${action}`;
     try {
+      const key = keys.current[signature] ||= randomToken();
       const result = await api<CompletionResult | ParticipationResult>(path, { method: 'POST', body: JSON.stringify({ idempotency_key: key, record_id: activity.record_id, session_date: sessionDate }) });
       delete keys.current[signature]; changed(result.development);
       if ('gains' in result) {
@@ -78,6 +80,7 @@ export function EmployeeWorkspace({ employeeId }: { employeeId?: string }) {
     {readOnly && <Link href="/hr" className={s.back}>← К обзору команды</Link>}
     <div className={s.heading}><div><div className={s.eyebrow}>{readOnly ? 'ПРОФИЛЬ СОТРУДНИКА' : 'МОЕ РАЗВИТИЕ'}</div><h1>{readOnly ? employee.full_name : `Ваш следующий шаг, ${employee.full_name.split(' ')[0]}`}</h1><div className={s.sub}>{employee.role} · {employee.grade} | {employee.department}{employee.is_test ? ' · Тестовые данные' : ''}</div></div><div className={s.date}>{dateLabel(development.as_of_date)}</div></div>
     {error && <Notice kind="error">{error}</Notice>}{success && <Notice>{success}</Notice>}
+    {readOnly && <AccessPanel key={employee.employee_id} employeeId={employee.employee_id} />}
     <div className={s.summary}><CareerPath development={development} onEdit={readOnly ? undefined : () => setEditingGoal(!editingGoal)} /><Panel className={s.stats}><div className={s.statTitle}>Ваше развитие в цифрах</div><div className={s.statRow}><div><div className={s.statNumber}>{history.filter(r => r.status === 'completed').length}</div><div className={s.statLabel}>активностей завершено</div></div><div><div className={s.statNumber}>{development.critical_gaps}</div><div className={s.statLabel}>критических разрывов<br />до цели</div></div></div><div className={s.statHint}>{development.available_events.length} подходящих шагов · {participations.length} текущих участий<br />Оценка навыков {dateLabel(employee.last_review_date)}. Последующие завершения учтены.</div></Panel></div>
     {editingGoal && !readOnly && <GoalEditor development={development} busy={busy} onSave={saveGoal} onClose={() => setEditingGoal(false)} />}
     <div className={s.sectionHeading}><div><h2>Следующие шаги</h2><p>Подобраны под вашу цель, опыт и историю участия</p></div><Button onClick={() => { setError(''); void recommend(true); }} disabled={thinking || busy}>{thinking ? 'Подбираем…' : recommendation ? 'Обновить подбор ↻' : 'Подобрать с AI ↗'}</Button></div>

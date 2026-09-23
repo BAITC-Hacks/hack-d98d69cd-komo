@@ -1,0 +1,6 @@
+.panel { margin: 0 0 24px; }
+.panel h2 { margin: 0 0 10px; font-size: 18px; }
+.panel p { margin: 8px 0; color: #596174; line-height: 1.5; }
+.form { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+.form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.form input { padding: 11px 12px; border: 1px solid #dce0e9; border-radius: 8px; font: inherit; max-width: 100%; }

@@ -57,3 +57,31 @@ def test_semantic_duplicates_do_not_inflate_skills(dataset):
 def test_original_completed_history_has_no_semantic_duplicates(dataset):
     keys = [completion_identity(r, dataset[2]) for r in dataset[1] if r['status'] == 'completed']
     assert len(keys) == len(set(keys))
+
+
+
+async def test_hr_can_provision_any_imported_employee_without_reset(client):
+    from app.core.db import Session
+    from app.features.employees.models import Employee
+    await login(client, 'hr')
+    p = prepare()['bundle']['employees'][0]
+    # No QA prefix: access is available to ordinary imported IDs too.
+    eid = 'STAFF_' + uuid4().hex[:12]; p['employee_id'] = eid
+    assert (await upload(client, [p], [])).status_code == 200
+    # Keep this synthetic integration fixture out of the working HR overview.
+    async with Session() as db:
+        (await db.get(Employee, eid)).is_test = True
+        await db.commit()
+    path = f'/api/v1/employees/{eid}'
+    assert (await client.get(path + '/access')).json() == {'username': None}
+    assert (await client.post(path + '/access', json={'password': 'short'})).status_code == 422
+    created = await client.post(path + '/access', json={'password': 'staff-demo-2026'})
+    assert created.status_code == 201 and created.json() == {'username': eid}
+    assert (await client.post(path + '/access', json={'password': 'other-password'})).status_code == 409
+    assert (await upload(client, [p], [])).status_code == 200
+    assert (await client.post('/api/v1/auth/login', json={'username': eid, 'password': 'staff-demo-2026'})).status_code == 200
+    assert (await client.get(path + '/development')).status_code == 200
+    assert (await client.patch(path + '/career-goal', json={'career_goal': None})).status_code == 200
+    assert (await client.get('/api/v1/employees/E0001')).status_code == 403
+    assert (await client.get(path + '/access')).status_code == 403
+    assert (await client.post(path + '/access', json={'password': 'other-password'})).status_code == 403

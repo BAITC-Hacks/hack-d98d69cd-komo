@@ -5,12 +5,23 @@ from app.core.db import get_db
 from app.features.identity.models import User
 from app.features.identity.service import current_user, hr_user, require_employee_access
 from app.features.employees.models import Employee
-from app.features.employees.schemas import EmployeeProfile, EmployeeView, GoalInput
+from app.features.employees.schemas import EmployeeProfile, EmployeeView, GoalInput, AccessInput, EmployeeAccess
+from app.features.employees.access import employee_access, create_access
 from app.features.employees.service import get_employee, effective_profile
 from app.features.development.service import context_for, complete, start, cancel, change_goal
 from app.features.development.schemas import Development, HistoryView, CompletionInput, CompletionResult, ParticipationResult
 
 router = APIRouter(prefix='/employees', tags=['employees'])
+
+
+@router.get('/{employee_id}/access', response_model=EmployeeAccess)
+async def access(employee_id: str, user: User = Depends(hr_user), db: AsyncSession = Depends(get_db)):
+    return await employee_access(db, employee_id)
+
+
+@router.post('/{employee_id}/access', response_model=EmployeeAccess, status_code=201)
+async def provision_access(employee_id: str, body: AccessInput, user: User = Depends(hr_user), db: AsyncSession = Depends(get_db)):
+    return await create_access(db, employee_id, body.password)
 
 
 @router.get('', response_model=list[EmployeeView])

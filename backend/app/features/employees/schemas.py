@@ -16,6 +16,15 @@ class GoalInput(BaseModel):
     career_goal: CareerGoal | None
 
 
+class AccessInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    password: str = Field(min_length=10, max_length=128)
+
+
+class EmployeeAccess(BaseModel):
+    username: str | None
+
+
 class RoleOption(BaseModel):
     role: str
     grade: Grade

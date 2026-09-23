@@ -72,6 +72,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/employees/{employee_id}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Access */
+        get: operations["access_api_v1_employees__employee_id__access_get"];
+        put?: never;
+        /** Provision Access */
+        post: operations["provision_access_api_v1_employees__employee_id__access_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/employees": {
         parameters: {
             query?: never;
@@ -315,6 +333,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccessInput */
+        AccessInput: {
+            /** Password */
+            password: string;
+        };
         /** ActivityOption */
         ActivityOption: {
             /** Event Id */
@@ -427,6 +450,11 @@ export interface components {
             availability_reasons?: string[];
             /** Uncovered Critical Skills */
             uncovered_critical_skills?: string[];
+        };
+        /** EmployeeAccess */
+        EmployeeAccess: {
+            /** Username */
+            username: string | null;
         };
         /** EmployeeStatus */
         EmployeeStatus: {
@@ -878,6 +906,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleOption"][];
+                };
+            };
+        };
+    };
+    access_api_v1_employees__employee_id__access_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeAccess"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    provision_access_api_v1_employees__employee_id__access_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeAccess"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

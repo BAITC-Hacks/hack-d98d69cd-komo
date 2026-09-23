@@ -15,6 +15,14 @@ async function login(page: Page, username: string, password: string) {
   await expect(page).toHaveURL(username === 'hr' ? /\/hr$/ : /\/me$/);
 }
 
+async function provision(page: Page, employeeId: string, password: string) {
+  await page.goto(`/hr/employees/${employeeId}`);
+  await page.getByLabel('Пароль нового сотрудника').fill(password);
+  await page.getByRole('button', { name: 'Создать доступ', exact: true }).click();
+  await expect(page.getByText('Доступ создан.', { exact: false })).toBeVisible();
+  await expect(page.getByTestId('employee-login')).toHaveText(employeeId);
+}
+
 test('full flow: HR import → employee goal → live AI → start → complete → HR', async ({ page }) => {
   const data = JSON.parse(cli(['prepare'])); const id = data.employee_id;
   data.bundle.employees[0].career_goal.target_grade = 'Middle';
@@ -32,7 +40,7 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   const otherResponse = await page.request.post(`/api/v1/employees/${otherId}/recommendations?refresh=true`);
   expect(otherResponse.ok()).toBe(true);
   const other = await otherResponse.json(); expect(other.source).toBe('ai');
-  cli(['account', '--employee-id', id]);
+  await provision(page, id, data.password);
   await login(page, id, data.password);
   await expect(page.getByRole('heading', { name: 'Ваш следующий шаг, QA' })).toBeVisible();
   const initialDevelopment = await (await page.request.get(`/api/v1/employees/${id}/development`)).json();
@@ -105,7 +113,7 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   await page.screenshot({ path: path.join(artifactDir, '09-hr-overview.png') });
   // Independently exercise dated participation on the synthetic preparation profile.
   const prepId = id.replace(/_FLOW$/, '_PREP');
-  cli(['account', '--employee-id', prepId]);
+  await provision(page, prepId, data.password);
   await login(page, prepId, data.password);
   await page.getByRole('button', { name: 'Подходящие активности', exact: true }).click();
   await page.getByRole('button', { name: 'Запланировать', exact: true }).first().click();

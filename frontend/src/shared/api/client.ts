@@ -1,6 +1,7 @@
 import type { components } from './schema';
 
 export type RoleOption = components['schemas']['RoleOption'];
+export type EmployeeAccess = components['schemas']['EmployeeAccess'];
 export type ParticipationResult = components['schemas']['ParticipationResult'];
 export type Identity = components['schemas']['Identity'];
 export type EmployeeProfile = components['schemas']['EmployeeView'];
