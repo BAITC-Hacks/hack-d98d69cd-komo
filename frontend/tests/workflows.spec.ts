@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve('..');
-const artifactDir = path.join(root, 'artifacts/round2');
+const artifactDir = path.join(root, 'artifacts/round3');
 fs.mkdirSync(artifactDir, { recursive: true });
-function cli(args: string[]) { return execFileSync('docker', ['compose', 'exec', '-T', 'api', 'python', '-m', 'app.qa_demo', ...args], { cwd: root, encoding: 'utf8' }).trim(); }
+function cli(args: string[]) { return execFileSync('docker', ['compose', 'exec', '-T', 'api', 'python', '-m', 'app.qa_acceptance', ...args], { cwd: root, encoding: 'utf8' }).trim(); }
 async function login(page: Page, username: string, password: string) {
   await page.goto('/login');
   await page.getByLabel('Логин', { exact: true }).fill(username);
@@ -46,18 +46,19 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   expect(ai.steps.every((s: { evidence: { factor: string }[] }) => new Set(s.evidence.map(f => f.factor)).size >= 3)).toBe(true);
   await page.getByText('Почему этот шаг', { exact: false }).first().click();
   await page.screenshot({ path: path.join(artifactDir, '03-ai.png'), fullPage: true });
-  await page.getByRole('button', { name: 'Подходящие активности', exact: true }).click();
-  const cloud = page.locator('div').filter({ has: page.getByRole('button', { name: 'Начать', exact: true }) }).filter({ hasText: 'Cloud Certification Prep' }).last();
-  await cloud.getByRole('button', { name: 'Начать', exact: true }).click();
+  const selected = ai.steps[0].activity;
+  expect(selected.format).toBe('self_paced');
+  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: selected.title, exact: true }) });
+  await card.getByRole('button', { name: 'Начать →', exact: true }).click();
   const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible();
   const before = await page.getByRole('progressbar', { name: 'Соответствие карьерной цели', includeHidden: true }).getAttribute('aria-valuenow');
-  const startResponse = page.waitForResponse(r => r.url().endsWith('/EV_009/start'));
+  const startResponse = page.waitForResponse(r => r.url().endsWith(`/${selected.event_id}/start`));
   await dialog.getByRole('button', { name: 'Начать активность', exact: true }).click();
   const started = await (await startResponse).json();
   expect(started.status).toBe('in_progress'); expect(String(started.development.progress)).toBe(before);
   await expect(dialog.getByText('В процессе', { exact: true })).toBeVisible();
   await page.screenshot({ path: path.join(artifactDir, '04-started.png') });
-  const completionResponse = page.waitForResponse(r => r.url().endsWith('/EV_009/complete'));
+  const completionResponse = page.waitForResponse(r => r.url().endsWith(`/${selected.event_id}/complete`));
   await dialog.getByRole('button', { name: 'Отметить выполненным', exact: true }).click();
   const completed = await (await completionResponse).json();
   expect(completed.development.progress).toBeGreaterThan(completed.before_progress);
@@ -68,18 +69,17 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   await page.reload();
   await expect(page.getByRole('progressbar', { name: 'Соответствие карьерной цели' })).toHaveAttribute('aria-valuenow', String(completed.development.progress));
   await page.getByRole('button', { name: /История участия/ }).click();
-  await expect(page.getByRole('row').filter({ hasText: 'Cloud Certification Prep' }).filter({ hasText: 'Завершено' })).toHaveCount(1);
+  await expect(page.getByRole('row').filter({ hasText: selected.title }).filter({ hasText: 'Завершено' })).toHaveCount(1);
   await page.screenshot({ path: path.join(artifactDir, '06-history.png') });
-  // Future activity has a real local planning action; it cannot award skills early.
-  await page.getByRole('button', { name: 'Подходящие активности', exact: true }).click();
-  await page.getByRole('button', { name: 'Запланировать', exact: true }).first().click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Запланировать участие', exact: true }).click();
-  await expect(page.getByRole('dialog').getByRole('button', { name: 'Отметить выполненным', exact: true })).toBeDisabled();
-  await page.screenshot({ path: path.join(artifactDir, '07-planned.png') });
-  await page.getByRole('dialog').getByRole('button', { name: 'Отменить участие', exact: true }).click();
-  await expect(page.getByText('Участие отменено.', { exact: false })).toBeVisible();
+  const fresh = await page.request.post(`/api/v1/employees/${id}/recommendations?refresh=true`);
+  expect(fresh.ok()).toBe(true);
+  const next = await fresh.json();
+  expect(next.source).toBe('ai'); expect(next.context_version).not.toBe(ai.context_version);
+  expect(next.steps.map((s: { activity: { event_id: string } }) => s.activity.event_id)).not.toContain(selected.event_id);
   await login(page, 'hr', process.env.HR_PASSWORD || 'hr-demo-2026');
   await page.getByLabel('Поиск сотрудников').fill(id);
+  await expect(page.getByRole('link', { name: 'Профиль ↗' })).toHaveCount(0);
+  await page.getByLabel('Показать тестовые данные').check();
   await page.getByRole('link', { name: 'Профиль ↗' }).click();
   await expect(page.getByRole('button', { name: 'Изменить цель' })).toHaveCount(0);
   await expect(page.getByRole('progressbar', { name: 'Соответствие карьерной цели' })).toHaveAttribute('aria-valuenow', String(completed.development.progress));
@@ -87,7 +87,19 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   await page.getByRole('link', { name: 'Обзор команды' }).click();
   await expect(page.getByRole('columnheader', { name: 'ЗАПЛАНИРОВАНО', exact: true })).toBeVisible();
   await page.screenshot({ path: path.join(artifactDir, '09-hr-overview.png') });
-  fs.writeFileSync(path.join(artifactDir, 'flow-result.json'), JSON.stringify({ employee_id: id, ai_source: ai.source, ai_ms: ai.duration_ms, before: completed.before_progress, after: completed.development.progress, record_id: completed.record_id, page_errors: errors }, null, 2));
+  // Independently exercise dated participation on the synthetic preparation profile.
+  const prepId = id.replace(/_FLOW$/, '_PREP');
+  cli(['account', '--employee-id', prepId]);
+  await login(page, prepId, data.password);
+  await page.getByRole('button', { name: 'Подходящие активности', exact: true }).click();
+  await page.getByRole('button', { name: 'Запланировать', exact: true }).first().click();
+  const planning = page.getByRole('dialog');
+  await planning.getByRole('button', { name: 'Запланировать участие', exact: true }).click();
+  await expect(planning.getByRole('button', { name: 'Отметить выполненным', exact: true })).toBeDisabled();
+  await page.screenshot({ path: path.join(artifactDir, '10-planned.png') });
+  await planning.getByRole('button', { name: 'Отменить участие', exact: true }).click();
+  await expect(page.getByText('Участие отменено.', { exact: false })).toBeVisible();
+  fs.writeFileSync(path.join(artifactDir, 'flow-result.json'), JSON.stringify({ employee_id: id, ai_source: ai.source, ai_ms: ai.duration_ms, selected_event: selected.event_id, next_events: next.steps.map((s: { activity: { event_id: string } }) => s.activity.event_id), before: completed.before_progress, after: completed.development.progress, record_id: completed.record_id, page_errors: errors }, null, 2));
   expect(errors).toEqual([]);
 });
 

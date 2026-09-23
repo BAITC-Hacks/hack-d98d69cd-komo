@@ -44,8 +44,8 @@ def prepare():
 
 
 async def account(employee_id):
-    if not employee_id.startswith('QA_R2_'):
-        raise ValueError('QA account must use QA_R2_ prefix')
+    if not employee_id.startswith(('QA_R2_', 'QA_R3_')):
+        raise ValueError('QA account must use QA_R2_ or QA_R3_ prefix')
     async with Session() as db:
         if await db.get(Employee, employee_id) is None:
             raise ValueError('Import the QA profile first')
