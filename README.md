@@ -177,6 +177,18 @@ E2E: загрузка шаблонов Excel/JSON → импорт и повто
 
 Для независимого повторения установки используйте свежий clone/архив файлов и отдельный экспертный Compose-проект по инструкции выше. У него должен быть новый project name, чтобы Docker создал пустой volume. Измените порты и origin, если 3002/8002 заняты. Не удаляйте рабочий volume ради проверки чистого запуска.
 
+### Frontend в dev-режиме по локальной сети
+
+При работающем API на порту 8000 остановите контейнер web (`docker compose stop web`), чтобы освободить порт 3000. Из папки `frontend`:
+
+```sh
+API_INTERNAL_URL=http://127.0.0.1:8000 npm run dev -- --port 3000
+```
+
+`--hostname 0.0.0.0` уже задан в npm-скрипте. Открывайте `http://10.19.24.89:3000` с устройства в той же сети. В `frontend/next.config.ts` этот IP внесен в `allowedDevOrigins` для HMR; при смене IP обновите список и перезапустите dev-сервер. Указывайте только hostname/IP, без протокола и порта. [Документация Next.js](https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins).
+
+Для входа и других API-действий этот адрес также должен входить в backend `APP_ORIGIN` или `APP_EXTRA_ORIGINS` (здесь нужен полный URL с портом). После изменения `.env` пересоздайте API: `docker compose up -d --force-recreate api`. `allowedDevOrigins` управляет ресурсами Next.js и не заменяет разрешенные origin backend.
+
 ### Диагностика
 
 - Docker daemon недоступен: запустите Docker Desktop/Engine и проверьте `docker info`.
