@@ -1,0 +1,4 @@
+record_id,employee_id,event_id,date,due_date,status,completion_pct,score,feedback_rating,assigned_by
+CQ_CASE_R1,CQ_CASE_01,EV_036,2026-09-10,,no_show,0,,,self
+CQ_CASE_R2,CQ_CASE_01,EV_036,2026-09-17,,no_show,0,,,self
+CQ_CASE_R3,CQ_CASE_01,EV_036,2026-09-24,,no_show,0,,,self

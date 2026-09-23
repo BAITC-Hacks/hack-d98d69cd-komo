@@ -1,0 +1,40 @@
+# Источники и сторонние компоненты
+
+## Задание и данные
+
+- [Официальное ТЗ Career Quest](https://docs.google.com/document/d/18SlxWxz_Vj_eag_UfEQ6t6g59jCxGTgu5x4QoylDbqI/edit?tab=t.0).
+- Стартовый набор `career_quest_dataset`, версия 1.0, срез 2026-10-01. Все люди и компании вымышлены; использование ограничено рамками хакатона по ТЗ. Открытая лицензия на публикацию вне хакатона не заявляется.
+- `docs/fixtures` — собственные синтетические дополнения команды в той же схеме; это не профили жюри.
+- Положение сохранено в `HACKATHON_RULES.md`.
+
+## Библиотеки
+
+Версии и лицензии библиотек ниже проверены по метаданным установленных пакетов. Полный набор Python-зависимостей фиксирует `backend/requirements.lock`, JavaScript — `frontend/package-lock.json`.
+
+| Компонент | Версия | Лицензия / источник |
+| --- | --- | --- |
+| FastAPI | 0.141.1 | MIT, https://github.com/fastapi/fastapi |
+| Uvicorn | 0.53.0 | BSD-3-Clause, https://github.com/encode/uvicorn |
+| SQLAlchemy | 2.0.54 | MIT, https://github.com/sqlalchemy/sqlalchemy |
+| Alembic | 1.20.0 | MIT, https://github.com/sqlalchemy/alembic |
+| asyncpg | 0.31.0 | Apache-2.0, https://github.com/MagicStack/asyncpg |
+| Pydantic | 2.13.5 | MIT, https://github.com/pydantic/pydantic |
+| redis-py | 8.1.0 | MIT, https://github.com/redis/redis-py |
+| OpenAI Python SDK | 3.19.0 | Apache-2.0, https://github.com/openai/openai-python |
+| argon2-cffi | 25.1.0 | MIT, https://github.com/hynek/argon2-cffi |
+| itsdangerous | 2.2.0 | BSD, https://github.com/pallets/itsdangerous |
+| Next.js | 16.3.6 | MIT, https://github.com/vercel/next.js |
+| React | 19.3.0 | MIT, https://github.com/facebook/react |
+| TypeScript | 5.9.3 | Apache-2.0, https://github.com/microsoft/TypeScript |
+| openapi-typescript | 7.13.0 | MIT, https://github.com/openapi-ts/openapi-typescript |
+| Playwright | 1.63.0 | Apache-2.0, https://github.com/microsoft/playwright |
+
+Контейнеры: Python 3.12.13-slim, Node.js 22.22.1-alpine, PostgreSQL 17.7-alpine, Redis 7.4.7-alpine. Redis server и redis-py имеют разные лицензии: ветка Redis 7.4 поставляется с выбором RSALv2/SSPL, как указано в [README версии 7.4.7](https://github.com/redis/redis/blob/7.4.7/README.md) и [LICENSE](https://github.com/redis/redis/blob/7.4.7/LICENSE.txt). Исходники Redis не изменяются; используется отдельный локальный контейнер.
+
+## AI и происхождение реализации
+
+- Провайдер модели — OpenAI API, конфигурируемая модель `gpt-4.1-mini-2025-04-14`. Это внешний сервис, а не поставляемые открытые веса модели.
+- [Responses API и структурированные ответы](https://developers.openai.com/api/docs/guides/structured-outputs).
+- AI получает обезличенные синтетические признаки, допустимые варианты и агрегаты истории. Код выбирает допустимые события; модель ранжирует их; сервер проверяет ответ и формирует фактическое обоснование.
+- Исходники приложения и тесты подготовлены с помощью Codex в соревновательный период. До реализации были подготовлены документы контекста и архитектурный промпт; готовое приложение заранее не использовалось.
+- Готовые продуктовые шаблоны, сторонние изображения и веб-шрифты не используются. Интерфейс выполнен на CSS Modules и системных шрифтах.
