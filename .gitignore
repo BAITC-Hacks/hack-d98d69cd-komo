@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+!.env.jury.example
 .DS_Store
 **/__pycache__/
 **/.pytest_cache/
@@ -12,5 +13,3 @@ artifacts/
 .coverage
 test-results/
 playwright-report/
-EOF 
-

@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     env_file:
-      - path: .env
+      - path: ${APP_ENV_FILE:-.env}
         required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://career:career-local-only@postgres:5432/career_quest
