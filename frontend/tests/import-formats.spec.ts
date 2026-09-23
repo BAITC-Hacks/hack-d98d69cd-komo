@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve('..');
-const out = path.join(root, 'artifacts/import-formats');
+const out = path.join(root, process.env.TEST_ARTIFACT_DIR || 'artifacts/import-formats');
 fs.mkdirSync(out, { recursive: true });
 
 test('download Excel and JSON templates, upload, repeat and show errors', async ({ page }) => {

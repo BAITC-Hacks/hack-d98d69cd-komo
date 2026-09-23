@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve('..');
-const artifactDir = path.join(root, 'artifacts/round3');
+const artifactDir = path.join(root, process.env.TEST_ARTIFACT_DIR || 'artifacts/round3');
 fs.mkdirSync(artifactDir, { recursive: true });
 function cli(args: string[]) { return execFileSync('docker', ['compose', 'exec', '-T', 'api', 'python', '-m', 'app.qa_acceptance', ...args], { cwd: root, encoding: 'utf8' }).trim(); }
 async function login(page: Page, username: string, password: string) {
@@ -20,12 +20,17 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   fs.writeFileSync(path.join(artifactDir, 'last-run.json'), JSON.stringify({ employee_id: id, password: data.password }));
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await login(page, 'hr', process.env.HR_PASSWORD || 'hr-demo-2026');
+  const hrBefore = await (await page.request.get('/api/v1/hr/overview')).json();
   await page.getByRole('link', { name: 'Импорт данных' }).click();
   await page.getByLabel('Профили сотрудников: Excel или JSON').setInputFiles({ name: 'employees.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data.bundle)) });
   await page.getByLabel('История участия: Excel, JSON или CSV').setInputFiles({ name: 'history.csv', mimeType: 'text/csv', buffer: Buffer.from(data.history_csv) });
   await page.getByRole('button', { name: 'Проверить и импортировать' }).click();
   await expect(page.getByRole('heading', { name: 'Результат импорта' })).toBeVisible();
   await page.screenshot({ path: path.join(artifactDir, '01-import.png'), fullPage: true });
+  const otherId = id.replace(/_FLOW$/, '_CRITICAL');
+  const otherResponse = await page.request.post(`/api/v1/employees/${otherId}/recommendations?refresh=true`);
+  expect(otherResponse.ok()).toBe(true);
+  const other = await otherResponse.json(); expect(other.source).toBe('ai');
   cli(['account', '--employee-id', id]);
   await login(page, id, data.password);
   await expect(page.getByRole('heading', { name: 'Ваш следующий шаг, QA' })).toBeVisible();
@@ -77,6 +82,12 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   expect(next.source).toBe('ai'); expect(next.context_version).not.toBe(ai.context_version);
   expect(next.steps.map((s: { activity: { event_id: string } }) => s.activity.event_id)).not.toContain(selected.event_id);
   await login(page, 'hr', process.env.HR_PASSWORD || 'hr-demo-2026');
+  const otherAfter = await (await page.request.get(`/api/v1/employees/${otherId}/recommendations`)).json();
+  expect(otherAfter.status).toBe('ready'); expect(otherAfter.result.run_id).toBe(other.run_id);
+  const otherCached = await (await page.request.post(`/api/v1/employees/${otherId}/recommendations`)).json();
+  expect(otherCached.cached).toBe(true); expect(otherCached.run_id).toBe(other.run_id);
+  const hrAfter = await (await page.request.get('/api/v1/hr/overview')).json();
+  for (const key of ['total_employees', 'total_participations', 'average_progress', 'completion_rate']) expect(hrAfter[key]).toBe(hrBefore[key]);
   await page.getByLabel('Поиск сотрудников').fill(id);
   await expect(page.getByRole('link', { name: 'Профиль ↗' })).toHaveCount(0);
   await page.getByLabel('Показать тестовые данные').check();
@@ -99,7 +110,7 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   await page.screenshot({ path: path.join(artifactDir, '10-planned.png') });
   await planning.getByRole('button', { name: 'Отменить участие', exact: true }).click();
   await expect(page.getByText('Участие отменено.', { exact: false })).toBeVisible();
-  fs.writeFileSync(path.join(artifactDir, 'flow-result.json'), JSON.stringify({ employee_id: id, ai_source: ai.source, ai_ms: ai.duration_ms, selected_event: selected.event_id, next_events: next.steps.map((s: { activity: { event_id: string } }) => s.activity.event_id), before: completed.before_progress, after: completed.development.progress, record_id: completed.record_id, page_errors: errors }, null, 2));
+  fs.writeFileSync(path.join(artifactDir, 'flow-result.json'), JSON.stringify({ employee_id: id, ai_source: ai.source, ai_ms: ai.duration_ms, other_employee_remains_ready: otherAfter.status === 'ready', qa_does_not_change_hr_totals: true, selected_event: selected.event_id, next_events: next.steps.map((s: { activity: { event_id: string } }) => s.activity.event_id), before: completed.before_progress, after: completed.development.progress, record_id: completed.record_id, page_errors: errors }, null, 2));
   expect(errors).toEqual([]);
 });
 
