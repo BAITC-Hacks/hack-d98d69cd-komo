@@ -3,7 +3,7 @@ import type { components } from './schema';
 export type RoleOption = components['schemas']['RoleOption'];
 export type ParticipationResult = components['schemas']['ParticipationResult'];
 export type Identity = components['schemas']['Identity'];
-export type EmployeeProfile = components['schemas']['EmployeeProfile'];
+export type EmployeeProfile = components['schemas']['EmployeeView'];
 export type Development = components['schemas']['Development'];
 export type HistoryView = components['schemas']['HistoryView'];
 export type RecommendationResult = components['schemas']['RecommendationResult'];

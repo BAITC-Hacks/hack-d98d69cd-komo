@@ -115,7 +115,7 @@ async def import_data(db: AsyncSession, employees_raw: bytes | None, history_raw
                 existing.data = e
                 eu += 1
         else:
-            db.add(Employee(employee_id=e['employee_id'], data=e))
+            db.add(Employee(employee_id=e['employee_id'], data=e, is_test=e['employee_id'].startswith('QA_')))
             ec += 1
     await db.flush()
     for r in history:

@@ -422,8 +422,25 @@ export interface components {
             /** Uncovered Critical Skills */
             uncovered_critical_skills?: string[];
         };
-        /** EmployeeProfile */
-        EmployeeProfile: {
+        /** EmployeeStatus */
+        EmployeeStatus: {
+            /** Employee Id */
+            employee_id: string;
+            /** Full Name */
+            full_name: string;
+            /** Department */
+            department: string;
+            /** Role */
+            role: string;
+            /** Grade */
+            grade: string;
+            /** Progress */
+            progress: number;
+            /** Status */
+            status: string;
+        };
+        /** EmployeeView */
+        EmployeeView: {
             /** Employee Id */
             employee_id: string;
             /** Full Name */
@@ -466,23 +483,11 @@ export interface components {
              * Format: date
              */
             last_review_date: string;
-        };
-        /** EmployeeStatus */
-        EmployeeStatus: {
-            /** Employee Id */
-            employee_id: string;
-            /** Full Name */
-            full_name: string;
-            /** Department */
-            department: string;
-            /** Role */
-            role: string;
-            /** Grade */
-            grade: string;
-            /** Progress */
-            progress: number;
-            /** Status */
-            status: string;
+            /**
+             * Is Test
+             * @default false
+             */
+            is_test: boolean;
         };
         /** EventParticipation */
         EventParticipation: {
@@ -551,6 +556,16 @@ export interface components {
         };
         /** HROverview */
         HROverview: {
+            /**
+             * Includes Test Data
+             * @default false
+             */
+            includes_test_data: boolean;
+            /**
+             * Excluded Test Employees
+             * @default 0
+             */
+            excluded_test_employees: number;
             /** As Of Date */
             as_of_date: string;
             /** Revision */
@@ -865,6 +880,7 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string;
+                include_test?: boolean;
             };
             header?: never;
             path?: never;
@@ -878,7 +894,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EmployeeProfile"][];
+                    "application/json": components["schemas"]["EmployeeView"][];
                 };
             };
             /** @description Validation Error */
@@ -909,7 +925,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EmployeeProfile"];
+                    "application/json": components["schemas"]["EmployeeView"];
                 };
             };
             /** @description Validation Error */
@@ -1194,7 +1210,9 @@ export interface operations {
     };
     hr_overview_api_v1_hr_overview_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_test?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1208,6 +1226,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HROverview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

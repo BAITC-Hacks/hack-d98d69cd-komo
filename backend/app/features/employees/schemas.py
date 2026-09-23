@@ -45,3 +45,7 @@ class EmployeeProfile(BaseModel):
         if self.hire_date > self.last_review_date:
             raise ValueError('Дата оценки не может предшествовать приему на работу')
         return self
+
+
+class EmployeeView(EmployeeProfile):
+    is_test: bool = False

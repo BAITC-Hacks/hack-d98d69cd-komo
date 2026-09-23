@@ -31,6 +31,8 @@ class EventParticipation(BaseModel):
 
 
 class HROverview(BaseModel):
+    includes_test_data: bool = False
+    excluded_test_employees: int = 0
     as_of_date: str
     revision: int
     total_employees: int

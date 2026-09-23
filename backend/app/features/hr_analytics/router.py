@@ -10,5 +10,5 @@ router = APIRouter(prefix='/hr', tags=['hr_analytics'])
 
 
 @router.get('/overview', response_model=HROverview)
-async def hr_overview(user: User = Depends(hr_user), db: AsyncSession = Depends(get_db)):
-    return await overview(db)
+async def hr_overview(include_test: bool = False, user: User = Depends(hr_user), db: AsyncSession = Depends(get_db)):
+    return await overview(db, include_test=include_test)

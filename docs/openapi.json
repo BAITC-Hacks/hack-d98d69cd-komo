@@ -129,6 +129,16 @@
               "default": "",
               "title": "Q"
             }
+          },
+          {
+            "name": "include_test",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Test"
+            }
           }
         ],
         "responses": {
@@ -139,7 +149,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/EmployeeProfile"
+                    "$ref": "#/components/schemas/EmployeeView"
                   },
                   "title": "Response Employees Api V1 Employees Get"
                 }
@@ -183,7 +193,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EmployeeProfile"
+                  "$ref": "#/components/schemas/EmployeeView"
                 }
               }
             }
@@ -623,6 +633,18 @@
         ],
         "summary": "Hr Overview",
         "operationId": "hr_overview_api_v1_hr_overview_get",
+        "parameters": [
+          {
+            "name": "include_test",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Test"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -630,6 +652,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HROverview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -1072,7 +1104,50 @@
         ],
         "title": "Development"
       },
-      "EmployeeProfile": {
+      "EmployeeStatus": {
+        "properties": {
+          "employee_id": {
+            "type": "string",
+            "title": "Employee Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "department": {
+            "type": "string",
+            "title": "Department"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "grade": {
+            "type": "string",
+            "title": "Grade"
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "employee_id",
+          "full_name",
+          "department",
+          "role",
+          "grade",
+          "progress",
+          "status"
+        ],
+        "title": "EmployeeStatus"
+      },
+      "EmployeeView": {
         "properties": {
           "employee_id": {
             "type": "string",
@@ -1169,6 +1244,11 @@
             "type": "string",
             "format": "date",
             "title": "Last Review Date"
+          },
+          "is_test": {
+            "type": "boolean",
+            "title": "Is Test",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -1188,50 +1268,7 @@
           "skills",
           "last_review_date"
         ],
-        "title": "EmployeeProfile"
-      },
-      "EmployeeStatus": {
-        "properties": {
-          "employee_id": {
-            "type": "string",
-            "title": "Employee Id"
-          },
-          "full_name": {
-            "type": "string",
-            "title": "Full Name"
-          },
-          "department": {
-            "type": "string",
-            "title": "Department"
-          },
-          "role": {
-            "type": "string",
-            "title": "Role"
-          },
-          "grade": {
-            "type": "string",
-            "title": "Grade"
-          },
-          "progress": {
-            "type": "number",
-            "title": "Progress"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          }
-        },
-        "type": "object",
-        "required": [
-          "employee_id",
-          "full_name",
-          "department",
-          "role",
-          "grade",
-          "progress",
-          "status"
-        ],
-        "title": "EmployeeStatus"
+        "title": "EmployeeView"
       },
       "EventParticipation": {
         "properties": {
@@ -1403,6 +1440,16 @@
       },
       "HROverview": {
         "properties": {
+          "includes_test_data": {
+            "type": "boolean",
+            "title": "Includes Test Data",
+            "default": false
+          },
+          "excluded_test_employees": {
+            "type": "integer",
+            "title": "Excluded Test Employees",
+            "default": 0
+          },
           "as_of_date": {
             "type": "string",
             "title": "As Of Date"

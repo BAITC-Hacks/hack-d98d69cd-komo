@@ -100,7 +100,7 @@ async def test_fallback_and_redis_failure(client, monkeypatch, dataset):
 
 async def test_hr_aggregates_match_database(client):
     await login(client, 'hr')
-    result = await client.get('/api/v1/hr/overview')
+    result = await client.get('/api/v1/hr/overview?include_test=true')
     assert result.status_code == 200, result.text
     data = result.json()
     async with Session() as db:
