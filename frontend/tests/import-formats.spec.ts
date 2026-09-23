@@ -60,7 +60,7 @@ b=io.BytesIO();w.save(b);sys.stdout.buffer.write(b.getvalue())
   await expect(page.getByRole('link', { name: `Открыть профиль ${id} и подобрать шаги ↗` })).toBeVisible();
   await page.getByLabel('Профили сотрудников: Excel или JSON').setInputFiles({ name: 'broken.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from('broken') });
   await page.getByRole('button', { name: 'Проверить и импортировать', exact: false }).click();
-  await expect(page.getByRole('alert')).toContainText('Не удалось прочитать Excel');
+  await expect(page.getByRole('alert').filter({ hasText: 'Не удалось прочитать Excel' })).toContainText('Не удалось прочитать Excel');
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await page.screenshot({ path: path.join(out, '03-mobile-error.png'), fullPage: true });

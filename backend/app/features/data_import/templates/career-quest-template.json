@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "dataset": "Career Quest",
+    "version": "1.0",
+    "as_of_date": "2026-10-01"
+  },
+  "employees": [
+    {
+      "employee_id": "TEMPLATE_EMP_001",
+      "full_name": "Пример сотрудника",
+      "department": "Backend Development",
+      "role": "Backend Engineer",
+      "grade": "Middle",
+      "manager_id": null,
+      "hire_date": "2023-01-01",
+      "tenure_months": 45,
+      "work_format": "hybrid",
+      "preferred_language": "kk",
+      "career_goal": {
+        "target_role": "Backend Engineer",
+        "target_grade": "Senior"
+      },
+      "skills": {
+        "SK_PYTHON": 3,
+        "SK_SQL": 3,
+        "SK_API_DESIGN": 4,
+        "SK_SYSTEM_DESIGN": 2,
+        "SK_CLOUD": 1,
+        "SK_CONTAINERS": 1,
+        "SK_CICD": 3,
+        "SK_APP_SECURITY": 2,
+        "SK_OBSERVABILITY": 1,
+        "SK_DATA_VIZ": 1,
+        "SK_ROADMAPPING": 2,
+        "SK_COMMUNICATION": 4,
+        "SK_PUBLIC_SPEAKING": 2,
+        "SK_WRITTEN_COMMUNICATION": 2,
+        "SK_STAKEHOLDER_MGMT": 1,
+        "SK_LEADERSHIP": 1,
+        "SK_MENTORING": 2,
+        "SK_FEEDBACK": 2,
+        "SK_CONFLICT_RESOLUTION": 2,
+        "SK_TEAMWORK": 2,
+        "SK_EMOTIONAL_INTELLIGENCE": 3,
+        "SK_PROBLEM_SOLVING": 3,
+        "SK_CRITICAL_THINKING": 2,
+        "SK_TIME_MANAGEMENT": 3,
+        "SK_ADAPTABILITY": 1
+      },
+      "last_review_date": "2026-09-01"
+    }
+  ],
+  "history": [
+    {
+      "record_id": "TEMPLATE_REC_001",
+      "employee_id": "TEMPLATE_EMP_001",
+      "event_id": "EV_009",
+      "date": "2026-09-25",
+      "due_date": null,
+      "status": "completed",
+      "completion_pct": 100,
+      "score": 85,
+      "feedback_rating": 4,
+      "assigned_by": "self"
+    }
+  ]
+}

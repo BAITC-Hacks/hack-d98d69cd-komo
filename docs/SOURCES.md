@@ -27,6 +27,9 @@
 | React | 19.3.0 | MIT, https://github.com/facebook/react |
 | TypeScript | 5.9.3 | Apache-2.0, https://github.com/microsoft/TypeScript |
 | openapi-typescript | 7.13.0 | MIT, https://github.com/openapi-ts/openapi-typescript |
+| openpyxl | 3.1.5 | MIT, https://openpyxl.readthedocs.io/en/stable/ |
+| et_xmlfile | 2.0.0 | MIT, https://foss.heptapod.net/openpyxl/et_xmlfile |
+| defusedxml | 0.7.1 | PSF, https://github.com/tiran/defusedxml |
 | Playwright | 1.63.0 | Apache-2.0, https://github.com/microsoft/playwright |
 
 Контейнеры: Python 3.12.13-slim, Node.js 22.22.1-alpine, PostgreSQL 17.7-alpine, Redis 7.4.7-alpine. Redis server и redis-py имеют разные лицензии: ветка Redis 7.4 поставляется с выбором RSALv2/SSPL, как указано в [README версии 7.4.7](https://github.com/redis/redis/blob/7.4.7/README.md) и [LICENSE](https://github.com/redis/redis/blob/7.4.7/LICENSE.txt). Исходники Redis не изменяются; используется отдельный локальный контейнер.
@@ -38,3 +41,4 @@
 - AI получает обезличенные синтетические признаки, допустимые варианты и агрегаты истории. Код выбирает допустимые события; модель ранжирует их; сервер проверяет ответ и формирует фактическое обоснование.
 - Исходники приложения и тесты подготовлены с помощью Codex в соревновательный период. До реализации были подготовлены документы контекста и архитектурный промпт; готовое приложение заранее не использовалось.
 - Готовые продуктовые шаблоны, сторонние изображения и веб-шрифты не используются. Интерфейс выполнен на CSS Modules и системных шрифтах.
+- Собственные шаблоны импорта находятся в `backend/app/features/data_import/templates`. Справочники взяты из стартового набора; пример сотрудника синтетический. Excel подготовлен инструментом Spreadsheets / artifact-tool; он не является runtime-зависимостью приложения. Сервер читает .xlsx через openpyxl, не исполняет формулы. [Документация чтения](https://openpyxl.readthedocs.io/en/stable/tutorial.html#loading-from-a-file).

@@ -23,11 +23,19 @@ def validation_details(error: ValidationError):
 
 def parse_history(raw: bytes) -> list[dict]:
     try:
-        reader = csv.DictReader(io.StringIO(raw.decode('utf-8-sig')))
-        if reader.fieldnames != HISTORY_COLUMNS:
-            raise AppError('invalid_csv_header', 'CSV должен содержать исходные колонки истории в заданном порядке', 422, {'columns': HISTORY_COLUMNS})
+        text = raw.decode('utf-8-sig')
+        first_line = text.splitlines()[0] if text.splitlines() else ''
+        delimiter = ';' if first_line.count(';') > first_line.count(',') else ','
+        reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
+        fields = [f.strip() for f in reader.fieldnames or []]
+        if len(fields) != len(HISTORY_COLUMNS) or set(fields) != set(HISTORY_COLUMNS):
+            raise AppError('invalid_csv_header', 'CSV должен содержать колонки истории; порядок может быть любым', 422, {'columns': HISTORY_COLUMNS})
+        reader.fieldnames = fields
         rows = []
         for line, row in enumerate(reader, start=2):
+            if None in row or any(v is None for v in row.values()):
+                raise AppError('invalid_csv_row', f'CSV, строка {line}: количество значений не совпадает с колонками', 422)
+            row = {k: v.strip() for k, v in row.items()}
             if len(rows) >= 20000:
                 raise AppError('import_too_large', 'Не более 20 000 записей за импорт', 413)
             try:
@@ -44,7 +52,7 @@ def parse_history(raw: bytes) -> list[dict]:
 
 async def import_data(db: AsyncSession, employees_raw: bytes | None, history_raw: bytes | None) -> ImportResult:
     if not employees_raw and not history_raw:
-        raise AppError('files_required', 'Выберите JSON профилей и/или CSV истории', 422)
+        raise AppError('files_required', 'Выберите Excel, JSON профилей или файл истории с непустыми данными', 422)
     state = await get_state(db, lock=True)
     incoming_employees = []
     if employees_raw:

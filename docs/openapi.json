@@ -468,6 +468,51 @@
         }
       }
     },
+    "/api/v1/hr/import/template": {
+      "get": {
+        "tags": [
+          "data_import"
+        ],
+        "summary": "Template",
+        "operationId": "template_api_v1_hr_import_template_get",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "xlsx",
+                "json"
+              ],
+              "type": "string",
+              "default": "xlsx",
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "summary": "Health",

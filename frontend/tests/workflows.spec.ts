@@ -50,8 +50,8 @@ test('HR: aggregates, employee lookup, import and new profile', async ({ page })
   await expect(page.getByText('ПРОФИЛЬ СОТРУДНИКА', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /Отметить выполненным/ })).toHaveCount(0);
   await page.getByRole('link', { name: 'Импорт данных' }).click();
-  await page.getByLabel('JSON профилей сотрудников').setInputFiles(path.resolve('../docs/fixtures/employees.json'));
-  await page.getByLabel('CSV истории участия').setInputFiles(path.resolve('../docs/fixtures/activity_history.csv'));
+  await page.getByLabel('Профили сотрудников: Excel или JSON').setInputFiles(path.resolve('../docs/fixtures/employees.json'));
+  await page.getByLabel('История участия: Excel, JSON или CSV').setInputFiles(path.resolve('../docs/fixtures/activity_history.csv'));
   await page.getByRole('button', { name: 'Проверить и импортировать' }).click();
   await expect(page.getByRole('heading', { name: 'Результат импорта' })).toBeVisible();
   await page.screenshot({ path: '../artifacts/import-result.png', fullPage: true });
