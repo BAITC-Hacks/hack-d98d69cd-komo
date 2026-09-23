@@ -35,11 +35,28 @@ def prepare():
         profile('BLOCKED', 'Data Analyst', gaps={'SK_STATISTICS': 0, 'SK_ML_BASICS': 0}),
         profile('CROSS', 'Data Analyst', target_role='Product Manager', gaps={'SK_PRODUCT_ANALYTICS': 2, 'SK_STATISTICS': 1}),
         profile('EMPTY', 'Backend Engineer'),
+        profile('ONLINE', 'Backend Engineer', gaps={'SK_SYSTEM_DESIGN': 3}),
+        profile('OFFLINE', 'Backend Engineer', gaps={'SK_SYSTEM_DESIGN': 3}),
+        profile('RECENTONLINE', 'Backend Engineer', gaps={'SK_SYSTEM_DESIGN': 3}),
+        profile('RECENTOFFLINE', 'Backend Engineer', gaps={'SK_SYSTEM_DESIGN': 3}),
     ]
     history = [dict(record_id=prefix + '_MISS' + str(i), employee_id=profiles[1]['employee_id'],
                     event_id='EV_036', date=day, due_date='', status='no_show', completion_pct=0,
                     score='', feedback_rating='', assigned_by='self')
                for i, day in enumerate(['2026-09-10', '2026-09-17', '2026-09-24'])]
+    # Counterfactual pairs: identical skills/candidates, opposite participation history.
+    # Expectations are fixed here before the model is called.
+    for p in profiles[6:]:
+        case = p['employee_id'].rsplit('_', 1)[1]
+        bad_event = 'EV_006' if case.endswith('ONLINE') else 'EV_007'
+        good_event = 'EV_007' if bad_event == 'EV_006' else 'EV_006'
+        attempts = [(bad_event, day) for day in ('2026-09-10', '2026-09-17', '2026-09-24')]
+        if case.startswith('RECENT'):
+            # Old negative history for the alternative must not dominate recent evidence.
+            attempts += [(good_event, day) for day in ('2025-06-01', '2025-07-01', '2025-08-01')]
+        history.extend(dict(record_id=p['employee_id'] + '_MISS' + str(i), employee_id=p['employee_id'],
+                            event_id=event, date=day, due_date='', status='no_show', completion_pct=0,
+                            score='', feedback_rating='', assigned_by='self') for i, (event, day) in enumerate(attempts))
     out = io.StringIO(); w = csv.DictWriter(out, fieldnames=HISTORY_COLUMNS); w.writeheader(); w.writerows(history)
     return {'employee_id': profiles[0]['employee_id'], 'password': PASSWORD,
             'bundle': {'meta': {'dataset': 'Career Quest', 'version': '1.0', 'as_of_date': '2026-10-01'}, 'employees': profiles},
@@ -60,6 +77,10 @@ def quality(case, result, development):
     if case == 'PREP': return first['event_id'] == 'EV_013' and 'EV_014' in first['preparatory_for'] and 'EV_014' not in ids
     if case == 'BLOCKED': return first['event_id'] == 'EV_020' and 'EV_024' not in ids and 'EV_021' not in ids
     if case == 'CROSS': return development['goal']['role'] == 'Product Manager' and any(g['skill_id'] == 'SK_PRODUCT_ANALYTICS' for g in first['gains'])
+    if case in ('ONLINE', 'OFFLINE', 'RECENTONLINE', 'RECENTOFFLINE'):
+        expected = 'EV_007' if case.endswith('ONLINE') else 'EV_006'
+        candidates = {o['event_id'] for o in development['available_events']}
+        return {'EV_006', 'EV_007'} <= candidates and first['event_id'] == expected and any(f['factor'] == 'history' for f in steps[0]['evidence'])
     return False
 
 
@@ -80,6 +101,7 @@ def verify_ai(repeats):
                 report.append({'case': case, 'attempt': attempt + 1, 'employee_id': eid, 'source': result['source'],
                                'cached': result['cached'], 'seconds': seconds, 'events': [s['activity']['event_id'] for s in result['steps']],
                                'quality_pass': bool(quality(case, result, dev)),
+                               'candidate_count': len(dev['available_events']),
                                'factor_groups': [len({f['factor'] for f in s['evidence']}) for s in result['steps']]})
     print(json.dumps(report, ensure_ascii=False, indent=2))
     if not all(r['quality_pass'] and r['seconds'] < 10 for r in report):

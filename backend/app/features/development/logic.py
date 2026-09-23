@@ -1,4 +1,5 @@
 """Shared, deterministic domain rules. No database, HTTP or model calls."""
+from datetime import date, timedelta
 from app.features.catalog.service import Catalog
 from app.features.development.context import context_version
 from app.features.development.schemas import Development, Goal, SkillState, SkillGain, ActivityOption
@@ -147,14 +148,28 @@ def calculate_development(employee: dict, history: list[dict], catalog: Catalog,
                        participations=participations, availability_reasons=reasons, uncovered_critical_skills=uncovered)
 
 
-def history_facts(history: list[dict], event: ActivityOption, catalog: Catalog) -> dict:
+def history_facts(history: list[dict], event: ActivityOption, catalog: Catalog, as_of: str = '2026-10-01') -> dict:
     relevant_skills = {g.skill_id for g in event.gains}
     related = [r for r in history if r['status'] not in ('planned', 'cancelled') and relevant_skills.intersection(g['skill_id'] for g in catalog.events[r['event_id']]['develops_skills'])]
+    cutoff = (date.fromisoformat(as_of) - timedelta(days=180)).isoformat()
+    same = [r for r in history if r['event_id'] == event.event_id and r['status'] not in ('planned', 'cancelled')]
+    format_history = [r for r in history if not catalog.events[r['event_id']]['mandatory']
+                      and catalog.events[r['event_id']]['format'] == event.format and r['status'] not in ('planned', 'cancelled')]
+    ratings = [float(r['feedback_rating']) for r in format_history if r.get('feedback_rating') not in (None, '')]
+    scores = [float(r['score']) for r in related if r['status'] == 'completed' and r.get('score') not in (None, '')]
     return {
         'total': len(history), 'related': len(related),
         'completed': sum(r['status'] == 'completed' for r in related),
         'missed': sum(r['status'] in ('no_show', 'dropped', 'declined') for r in related),
         'same_event_completed': sum(r['event_id'] == event.event_id and r['status'] == 'completed' for r in history),
+        'same_event_recent_missed': sum(r['date'] >= cutoff and r['status'] in ('no_show', 'dropped', 'declined') for r in same),
+        'same_event_last_date': max((r['date'] for r in same), default=None),
+        'format_completed': sum(r['status'] == 'completed' for r in format_history),
+        'format_recent_missed': sum(r['date'] >= cutoff and r['status'] in ('no_show', 'dropped', 'declined') for r in format_history),
+        'format_feedback_mean': round(sum(ratings) / len(ratings), 1) if ratings else None,
+        'format_feedback_count': len(ratings),
+        'related_score_mean': round(sum(scores) / len(scores), 1) if scores else None,
+        'related_score_count': len(scores),
     }
 
 
@@ -163,8 +178,8 @@ def rank_candidates(development: Development, history: list[dict], catalog: Cata
     def score(event):
         gain = sum(max(0, min(g.after, g.required) - g.before) for g in event.gains)
         critical_gain = sum(max(0, min(g.after, g.required) - g.before) for g in event.gains if g.skill_id in critical)
-        facts = history_facts(history, event, catalog)
-        history_factor = (facts['completed'] - facts['missed']) / max(1, facts['related'])
+        facts = history_facts(history, event, catalog, development.as_of_date)
+        history_factor = (facts['completed'] - facts['missed']) / max(1, facts['related']) - min(1, facts['same_event_recent_missed'] / 3)
         return (bool(critical_gain), critical_gain, bool(event.preparatory_critical_skills),
                 2 * gain + history_factor + bool(event.preparatory_for), -event.duration_hours, event.event_id)
     return sorted(development.available_events, key=score, reverse=True)
