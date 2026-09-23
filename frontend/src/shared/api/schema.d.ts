@@ -401,6 +401,11 @@ export interface components {
             as_of_date: string;
             /** Revision */
             revision: number;
+            /**
+             * Context Version
+             * @default
+             */
+            context_version: string;
             goal: components["schemas"]["Goal"];
             /** Progress */
             progress: number;
@@ -641,6 +646,11 @@ export interface components {
             employee_id: string;
             /** Revision */
             revision: number;
+            /**
+             * Context Version
+             * @default
+             */
+            context_version: string;
             /**
              * Source
              * @enum {string}

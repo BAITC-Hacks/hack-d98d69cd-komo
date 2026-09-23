@@ -28,6 +28,7 @@ class RecommendationResult(BaseModel):
     run_id: str
     employee_id: str
     revision: int
+    context_version: str = ''
     source: Literal['ai', 'fallback']
     model: str
     prompt_version: str

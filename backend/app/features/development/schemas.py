@@ -76,6 +76,7 @@ class Development(BaseModel):
     employee_id: str
     as_of_date: str
     revision: int
+    context_version: str = ''
     goal: Goal
     progress: float
     skills: list[SkillState]

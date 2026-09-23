@@ -86,14 +86,14 @@ def evidence_for(employee, development, event, history, catalog):
 
 
 async def latest(db: AsyncSession, employee_id: str) -> RecommendationState:
-    state = await get_state(db)
+    development = (await context_for(db, employee_id))[3]
     row = await db.scalar(select(RecommendationRun).where(RecommendationRun.employee_id == employee_id).order_by(RecommendationRun.created_at.desc()).limit(1))
     if not row:
         return RecommendationState(status='not_generated', result=None)
-    if row.data.get('prompt_version') != PROMPT_VERSION:
+    if row.data.get('prompt_version') != PROMPT_VERSION or not row.data.get('context_version'):
         return RecommendationState(status='stale', result=None)
     result = RecommendationResult.model_validate(row.data)
-    result.stale = row.revision != state.revision or result.model != settings().openai_model or result.prompt_version != PROMPT_VERSION
+    result.stale = result.context_version != development.context_version or result.model != settings().openai_model or result.prompt_version != PROMPT_VERSION
     return RecommendationState(status='stale' if result.stale else ('ready' if result.steps else 'no_eligible_step'), result=result)
 
 
@@ -102,14 +102,19 @@ async def recommend(db: AsyncSession, employee_id: str, refresh: bool = False) -
     employee, history, catalog, development = await context_for(db, employee_id)
     revision = development.revision
     config = settings()
-    key = f'cq:rec:{employee_id}:{revision}:{config.openai_model}:{PROMPT_VERSION}'
+    version = development.context_version
+    key = f'cq:rec:{employee_id}:{version}:{config.openai_model}:{PROMPT_VERSION}'
     cached = None if refresh else await cache_get(key)
     if cached:
         try:
             result = RecommendationResult.model_validate_json(cached)
-            if (await get_state(db)).revision == revision:
+            await get_state(db, lock=True)
+            current = (await context_for(db, employee_id))[3]
+            if current.context_version == version and result.context_version == version:
                 result.cached = True
+                await db.rollback()
                 return result
+            await db.rollback()
         except (ValidationError, ValueError):
             pass
     ranked = rank_candidates(development, history, catalog)
@@ -142,11 +147,13 @@ async def recommend(db: AsyncSession, employee_id: str, refresh: bool = False) -
             evidence = [f for f in evidence if f.fact_id in selected_facts[event_id]]
         explanation = ' '.join(f.text for f in evidence if f.factor in ('skill_gap', 'target_requirements'))
         steps.append(RecommendedStep(activity=event, explanation=explanation, evidence=evidence))
-    state = await get_state(db, lock=True)
-    if state.revision != revision:
+    await get_state(db, lock=True)
+    current = (await context_for(db, employee_id))[3]
+    if current.context_version != version:
         await db.rollback()
         raise AppError('stale_context', 'Данные изменились во время подбора. Повторите запрос.', 409)
     result = RecommendationResult(run_id=uuid4().hex, employee_id=employee_id, revision=revision, source=source,
+                                  context_version=version,
                                   model=config.openai_model, prompt_version=PROMPT_VERSION, created_at=datetime.now(timezone.utc).isoformat(),
                                   duration_ms=int((time.monotonic() - started) * 1000), message=message, steps=steps, actions=actions)
     db.add(RecommendationRun(run_id=result.run_id, employee_id=employee_id, revision=revision, data=result.model_dump(mode='json')))

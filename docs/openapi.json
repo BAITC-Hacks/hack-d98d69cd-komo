@@ -1007,6 +1007,11 @@
             "type": "integer",
             "title": "Revision"
           },
+          "context_version": {
+            "type": "string",
+            "title": "Context Version",
+            "default": ""
+          },
           "goal": {
             "$ref": "#/components/schemas/Goal"
           },
@@ -1668,6 +1673,11 @@
           "revision": {
             "type": "integer",
             "title": "Revision"
+          },
+          "context_version": {
+            "type": "string",
+            "title": "Context Version",
+            "default": ""
           },
           "source": {
             "type": "string",

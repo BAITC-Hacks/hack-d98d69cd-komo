@@ -4,7 +4,7 @@ from app.core.errors import AppError
 
 
 async def get_employee(db: AsyncSession, employee_id: str) -> dict:
-    employee = await db.get(Employee, employee_id)
+    employee = await db.get(Employee, employee_id, populate_existing=True)
     if employee is None:
         raise AppError('employee_not_found', 'Сотрудник не найден', 404)
     return effective_profile(employee)

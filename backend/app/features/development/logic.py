@@ -1,5 +1,6 @@
 """Shared, deterministic domain rules. No database, HTTP or model calls."""
 from app.features.catalog.service import Catalog
+from app.features.development.context import context_version
 from app.features.development.schemas import Development, Goal, SkillState, SkillGain, ActivityOption
 
 GRADES = ['Junior', 'Middle', 'Senior', 'Lead']
@@ -121,6 +122,7 @@ def calculate_development(employee: dict, history: list[dict], catalog: Catalog,
             reasons.append('Среди оставшихся активностей нет шага, который уменьшает разрыв до цели или открывает подготовительный переход.')
     uncovered = [s.name for s in skills if s.critical and s.gap > 0 and not any(any(g.skill_id == s.skill_id and g.after > g.before for g in e.gains) for e in direct)]
     return Development(employee_id=employee['employee_id'], as_of_date=as_of, revision=revision, goal=goal,
+                       context_version=context_version(employee, history, catalog, as_of),
                        progress=progress, skills=skills, critical_gaps=sum(s.critical and s.gap > 0 for s in skills), available_events=direct,
                        participations=participations, availability_reasons=reasons, uncovered_critical_skills=uncovered)
 

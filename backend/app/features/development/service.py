@@ -13,7 +13,7 @@ from app.features.development.schemas import CompletionInput, CompletionResult, 
 
 
 async def load_history(db: AsyncSession, employee_id: str) -> list[dict]:
-    rows = await db.scalars(select(ActivityRecord).where(ActivityRecord.employee_id == employee_id).order_by(ActivityRecord.date, ActivityRecord.record_id))
+    rows = await db.scalars(select(ActivityRecord).where(ActivityRecord.employee_id == employee_id).order_by(ActivityRecord.date, ActivityRecord.record_id).execution_options(populate_existing=True))
     return [r.data for r in rows]
 
 

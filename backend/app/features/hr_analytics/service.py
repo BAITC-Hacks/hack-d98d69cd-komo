@@ -41,7 +41,7 @@ async def overview(db: AsyncSession) -> HROverview:
             status = 'no_eligible_step'
         elif not run:
             status = 'not_generated'
-        elif run.revision != state.revision or run.data['model'] != settings().openai_model or run.data['prompt_version'] != PROMPT_VERSION:
+        elif run.data.get('context_version') != development.context_version or run.data['model'] != settings().openai_model or run.data['prompt_version'] != PROMPT_VERSION:
             status = 'stale'
         elif run.data['steps']:
             status = 'ready'
