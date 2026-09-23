@@ -6,13 +6,23 @@ from app.features.development.schemas import Development, Goal, SkillState, Skil
 GRADES = ['Junior', 'Middle', 'Senior', 'Lead']
 
 
+def completion_identity(record: dict, catalog: Catalog) -> tuple:
+    """A course awards once; recurring sessions/compliance remain distinct by date."""
+    event = catalog.events[record['event_id']]
+    recurring = event['mandatory'] or record['event_id'] == 'EV_036'
+    return record.get('employee_id'), record['event_id'], record['date'] if recurring else None
+
+
 def effective_skills(employee: dict, history: list[dict], catalog: Catalog) -> dict[str, int]:
     levels = dict(employee['skills'])
     seen = set()
     for record in sorted(history, key=lambda x: (x.get('effective_date', x['date']), x['record_id'])):
-        if record['record_id'] in seen or record['status'] != 'completed':
+        if record['status'] != 'completed':
             continue
-        seen.add(record['record_id'])
+        identity = completion_identity(record, catalog)
+        if identity in seen:
+            continue
+        seen.add(identity)
         effective_date = record.get('effective_date', record['date'])
         # Imported same-day history belongs to the assessment; an action
         # confirmed in this app occurs after the loaded baseline on that day.

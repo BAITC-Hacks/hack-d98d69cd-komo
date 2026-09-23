@@ -11,6 +11,7 @@ from app.features.catalog.service import load_catalog
 from app.features.employees.models import Employee
 from app.features.development.models import ActivityRecord
 from app.features.development.schemas import HistoryInput
+from app.features.development.logic import completion_identity
 from app.features.data_import.schemas import EmployeeBundle, ImportResult
 
 HISTORY_COLUMNS = ['record_id', 'employee_id', 'event_id', 'date', 'due_date', 'status', 'completion_pct', 'score', 'feedback_rating', 'assigned_by']
@@ -107,6 +108,21 @@ async def import_data(db: AsyncSession, employees_raw: bytes | None, history_raw
         existing = existing_records.get(r['record_id'])
         if existing and (existing.data.get('origin') == 'local' or existing.data.get('completed_at')):
             raise AppError('local_completion_conflict', 'Импорт не может перезаписать выполнение, подтвержденное в приложении: ' + r['record_id'], 409)
+    # Validate the final history under the same transaction lock used by completion.
+    # Different record IDs must not award the same non-repeatable course twice.
+    affected_ids = {r['employee_id'] for r in history} | {r.employee_id for r in existing_records.values()}
+    persisted = (await db.scalars(select(ActivityRecord).where(ActivityRecord.employee_id.in_(affected_ids)))).all() if affected_ids else []
+    final_history = {r.record_id: r.data for r in persisted} | {r['record_id']: r for r in history}
+    completed = {}
+    for r in final_history.values():
+        if r['status'] != 'completed':
+            continue
+        identity = completion_identity(r, catalog)
+        if identity in completed:
+            raise AppError('duplicate_completion', 'Повторное завершение активности не допускается', 422,
+                           {'employee_id': r['employee_id'], 'event_id': r['event_id'],
+                            'record_ids': [completed[identity], r['record_id']]})
+        completed[identity] = r['record_id']
     ec = eu = hc = hu = 0
     for e in incoming_employees:
         existing = current_employees.get(e['employee_id'])
