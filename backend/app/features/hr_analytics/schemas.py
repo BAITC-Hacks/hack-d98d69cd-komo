@@ -25,6 +25,9 @@ class EventParticipation(BaseModel):
     completed: int
     missed: int
     in_progress: int
+    overdue: int
+    planned: int
+    cancelled: int
 
 
 class HROverview(BaseModel):

@@ -1,10 +1,10 @@
 import type { Development } from '@/shared/api/client';
-import { Progress } from '@/shared/ui';
+import { Progress, Button } from '@/shared/ui';
 import s from '@/features/employee-profile/workspace.module.css';
 
-export function CareerPath({ development }: { development: Development }) {
+export function CareerPath({ development, onEdit }: { development: Development; onEdit?: () => void }) {
   const goal = development.goal;
-  return <section className={s.goal}><div className={s.goalLabel}>ВАША КАРЬЕРНАЯ ТРАЕКТОРИЯ</div><h2>{goal.role}</h2><p>Целевой уровень · {goal.grade}{goal.maintenance ? ' · поддержание компетенций' : ''}</p><div className={s.goalRow}><span>Соответствие требованиям цели</span><strong>{development.progress}%</strong></div><Progress value={development.progress} label="Соответствие карьерной цели" /><div className={s.goalNote}>{goal.inferred ? 'Цель предложена по текущей роли и грейду' : 'Цель из профиля сотрудника'} · Повышение грейда не происходит автоматически</div></section>;
+  return <section className={s.goal}><div className={s.goalLabel}>ВАША КАРЬЕРНАЯ ТРАЕКТОРИЯ</div><h2>{goal.role}</h2><p>Целевой уровень · {goal.grade}{goal.maintenance ? ' · поддержание компетенций' : ''}</p><div className={s.goalRow}><span>Соответствие требованиям цели</span><strong>{development.progress}%</strong></div><Progress value={development.progress} label="Соответствие карьерной цели" /><div className={s.goalNote}>{goal.source === 'manual' ? 'Цель выбрана вами' : goal.inferred ? 'Цель предложена по текущей роли и грейду' : 'Цель из профиля сотрудника'} · Повышение грейда не происходит автоматически</div>{onEdit && <Button variant="secondary" style={{ marginTop: 18, position: 'relative', zIndex: 1 }} onClick={onEdit}>Изменить цель</Button>}</section>;
 }
 
 export function SkillGrid({ development, all }: { development: Development; all: boolean }) {

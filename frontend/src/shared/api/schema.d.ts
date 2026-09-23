@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalog/role-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Roles */
+        get: operations["roles_api_v1_catalog_role_profiles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/employees": {
         parameters: {
             query?: never;
@@ -134,6 +151,57 @@ export interface paths {
         put?: never;
         /** Completion */
         post: operations["completion_api_v1_employees__employee_id__activities__event_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/employees/{employee_id}/career-goal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Goal */
+        patch: operations["goal_api_v1_employees__employee_id__career_goal_patch"];
+        trace?: never;
+    };
+    "/api/v1/employees/{employee_id}/activities/{event_id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Begin */
+        post: operations["begin_api_v1_employees__employee_id__activities__event_id__start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/employees/{employee_id}/participations/{record_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Participation */
+        post: operations["cancel_participation_api_v1_employees__employee_id__participations__record_id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -274,6 +342,20 @@ export interface components {
             record_id: string | null;
             /** Preparatory For */
             preparatory_for?: string[];
+            /** Sessions */
+            sessions?: string[];
+            /** Participation Status */
+            participation_status?: string | null;
+            /**
+             * Can Cancel
+             * @default false
+             */
+            can_cancel: boolean;
+            /**
+             * Expected Progress
+             * @default 0
+             */
+            expected_progress: number;
         };
         /** Body_upload_api_v1_hr_import_post */
         Body_upload_api_v1_hr_import_post: {
@@ -328,6 +410,12 @@ export interface components {
             critical_gaps: number;
             /** Available Events */
             available_events: components["schemas"]["ActivityOption"][];
+            /** Participations */
+            participations?: components["schemas"]["ActivityOption"][];
+            /** Availability Reasons */
+            availability_reasons?: string[];
+            /** Uncovered Critical Skills */
+            uncovered_critical_skills?: string[];
         };
         /** EmployeeProfile */
         EmployeeProfile: {
@@ -405,9 +493,17 @@ export interface components {
             missed: number;
             /** In Progress */
             in_progress: number;
+            /** Overdue */
+            overdue: number;
+            /** Planned */
+            planned: number;
+            /** Cancelled */
+            cancelled: number;
         };
         /** Evidence */
         Evidence: {
+            /** Fact Id */
+            fact_id: string;
             /**
              * Factor
              * @enum {string}
@@ -437,6 +533,16 @@ export interface components {
             inferred: boolean;
             /** Maintenance */
             maintenance: boolean;
+            /**
+             * Source
+             * @default profile
+             * @enum {string}
+             */
+            source: "profile" | "manual" | "automatic";
+        };
+        /** GoalInput */
+        GoalInput: {
+            career_goal: components["schemas"]["CareerGoal"] | null;
         };
         /** HROverview */
         HROverview: {
@@ -519,6 +625,14 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** ParticipationResult */
+        ParticipationResult: {
+            /** Record Id */
+            record_id: string;
+            /** Status */
+            status: string;
+            development: components["schemas"]["Development"];
+        };
         /** RecommendationResult */
         RecommendationResult: {
             /** Run Id */
@@ -573,6 +687,26 @@ export interface components {
             explanation: string;
             /** Evidence */
             evidence: components["schemas"]["Evidence"][];
+        };
+        /** RoleOption */
+        RoleOption: {
+            /** Role */
+            role: string;
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "Junior" | "Middle" | "Senior" | "Lead";
+            /** Required Skills */
+            required_skills: {
+                [key: string]: number;
+            };
+            /** Critical Skills */
+            critical_skills: string[];
+            /** Skill Names */
+            skill_names: {
+                [key: string]: string;
+            };
         };
         /** SkillGain */
         SkillGain: {
@@ -693,6 +827,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    roles_api_v1_catalog_role_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleOption"][];
                 };
             };
         };
@@ -857,6 +1011,113 @@ export interface operations {
             };
         };
     };
+    goal_api_v1_employees__employee_id__career_goal_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Development"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    begin_api_v1_employees__employee_id__activities__event_id__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompletionInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipationResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_participation_api_v1_employees__employee_id__participations__record_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompletionInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipationResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     last_recommendation_api_v1_employees__employee_id__recommendations_get: {
         parameters: {
             query?: never;
@@ -890,7 +1151,9 @@ export interface operations {
     };
     generate_recommendation_api_v1_employees__employee_id__recommendations_post: {
         parameters: {
-            query?: never;
+            query?: {
+                refresh?: boolean;
+            };
             header?: never;
             path: {
                 employee_id: string;

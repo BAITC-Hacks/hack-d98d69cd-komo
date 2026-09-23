@@ -5,8 +5,7 @@ from app.features.development.schemas import ActivityOption
 
 class ModelSelection(BaseModel):
     event_id: str
-    factors: list[Literal['grade', 'skill_gap', 'history', 'target_requirements']]
-    rationale: str
+    fact_ids: list[str]
 
 
 class ModelPlan(BaseModel):
@@ -14,6 +13,7 @@ class ModelPlan(BaseModel):
 
 
 class Evidence(BaseModel):
+    fact_id: str
     factor: Literal['grade', 'skill_gap', 'history', 'target_requirements']
     text: str
 

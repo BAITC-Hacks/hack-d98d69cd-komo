@@ -1,5 +1,7 @@
 import type { components } from './schema';
 
+export type RoleOption = components['schemas']['RoleOption'];
+export type ParticipationResult = components['schemas']['ParticipationResult'];
 export type Identity = components['schemas']['Identity'];
 export type EmployeeProfile = components['schemas']['EmployeeProfile'];
 export type Development = components['schemas']['Development'];
@@ -26,4 +28,4 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 
 export function errorMessage(error: unknown): string { return error instanceof Error ? error.message : 'Не удалось выполнить запрос'; }
 export function dateLabel(value: string): string { return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value.slice(0, 10)}T12:00:00`)); }
-export const statusLabels: Record<string, string> = { completed: 'Завершено', in_progress: 'В процессе', dropped: 'Прервано', no_show: 'Пропуск', declined: 'Отказ', overdue: 'Просрочено', no_eligible_step: 'Нет доступного шага', not_generated: 'Подбор не запущен', stale: 'Нужен новый подбор', ready: 'Шаг подобран' };
+export const statusLabels: Record<string, string> = { planned: 'Запланировано', cancelled: 'Отменено', completed: 'Завершено', in_progress: 'В процессе', dropped: 'Прервано', no_show: 'Пропуск', declined: 'Отказ', overdue: 'Просрочено', no_eligible_step: 'Нет доступного шага', not_generated: 'Подбор не запущен', stale: 'Нужен новый подбор', ready: 'Шаг подобран' };

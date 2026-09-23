@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     redis_url: str = 'redis://localhost:6379/0'
     dataset_path: str = '../career_quest_dataset'
     app_origin: str = 'http://localhost:3000'
+    app_extra_origins: str = 'http://localhost:3000,http://127.0.0.1:3000'
     openai_api_key: str = ''
     openai_key: str = ''
     openai_model: str = 'gpt-4.1-mini-2025-04-14'
@@ -15,6 +16,10 @@ class Settings(BaseSettings):
     employee_password: str = 'employee-demo-2026'
     hr_password: str = 'hr-demo-2026'
     employee_id: str = 'E0028'
+
+    @property
+    def allowed_origins(self) -> set[str]:
+        return {v.strip().rstrip('/') for v in [self.app_origin, *self.app_extra_origins.split(',')] if v.strip()}
 
     @property
     def api_key(self) -> str:

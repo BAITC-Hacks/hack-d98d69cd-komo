@@ -1,20 +1,20 @@
 import pytest
 from app.features.recommendations.service import validate_plan, model_payload
-from app.features.recommendations.schemas import ModelPlan, ModelSelection
+from app.features.recommendations.schemas import ModelPlan, ModelSelection, Evidence
 from app.features.development.logic import calculate_development, rank_candidates
 
 
 @pytest.mark.parametrize('ids', [[], ['unknown'], ['EV_005', 'EV_005'], ['a', 'b', 'c', 'd']])
 def test_invalid_selections_rejected(ids):
-    plan = ModelPlan(selections=[ModelSelection(event_id=i, factors=['grade', 'history', 'skill_gap'], rationale='Тест') for i in ids])
+    plan = ModelPlan(selections=[ModelSelection(event_id=i, fact_ids=[f'{i}:grade', f'{i}:skill_gap', f'{i}:history']) for i in ids])
     with pytest.raises(ValueError):
-        validate_plan(plan, {'EV_005', 'a', 'b', 'c', 'd'})
+        validate_plan(plan, {k: [] for k in ['EV_005', 'a', 'b', 'c', 'd']})
 
 
 def test_duplicate_factors_rejected():
-    plan = ModelPlan(selections=[ModelSelection(event_id='EV_005', factors=['grade', 'grade', 'grade'], rationale='Тест')])
+    plan = ModelPlan(selections=[ModelSelection(event_id='EV_005', fact_ids=['EV_005:grade'] * 3)])
     with pytest.raises(ValueError):
-        validate_plan(plan, {'EV_005'})
+        validate_plan(plan, {'EV_005': [Evidence(fact_id='EV_005:grade', factor='grade', text='Test')]})
 
 
 def test_outbound_payload_excludes_employee_identity(dataset):

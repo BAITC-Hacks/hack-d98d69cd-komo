@@ -11,6 +11,19 @@ class CareerGoal(BaseModel):
     target_grade: Grade
 
 
+class GoalInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    career_goal: CareerGoal | None
+
+
+class RoleOption(BaseModel):
+    role: str
+    grade: Grade
+    required_skills: dict[str, int]
+    critical_skills: list[str]
+    skill_names: dict[str, str]
+
+
 class EmployeeProfile(BaseModel):
     model_config = ConfigDict(extra='forbid')
     employee_id: str = Field(min_length=1, max_length=100, pattern=r'^[A-Za-z0-9_-]+$')

@@ -32,7 +32,7 @@ async def test_completion_concurrent_retry_and_stale_recommendation(client, data
     from app.features.identity.models import User
     await login(client, 'hr')
     e = deepcopy(next(x for x in dataset[0] if x['employee_id'] == 'E0028'))
-    e['employee_id'] = 'TEST_COMPLETE_' + uuid.uuid4().hex[:8]
+    e['employee_id'] = 'QA_R2_COMPLETE_' + uuid.uuid4().hex[:8]
     employee_id = e['employee_id']
     bundle = {'meta': {'dataset': 'Career Quest', 'version': '1.0', 'as_of_date': '2026-10-01'}, 'employees': [e]}
     assert (await client.post('/api/v1/hr/import', files={'employees': ('employees.json', json.dumps(bundle))})).status_code == 200
@@ -63,7 +63,7 @@ async def test_completion_concurrent_retry_and_stale_recommendation(client, data
 
 async def test_import_new_profile_history_and_atomic_error(client, dataset):
     await login(client, 'hr')
-    e = deepcopy(dataset[0][0]); e['employee_id'] = 'TEST_' + uuid.uuid4().hex[:10]; e['full_name'] = 'Synthetic Test Profile'
+    e = deepcopy(dataset[0][0]); e['employee_id'] = 'QA_R2_IMPORT_' + uuid.uuid4().hex[:10]; e['full_name'] = 'Synthetic Test Profile'
     bundle = {'meta': {'dataset': 'Career Quest', 'version': '1.0', 'as_of_date': '2026-10-01'}, 'employees': [e]}
     csv = 'record_id,employee_id,event_id,date,due_date,status,completion_pct,score,feedback_rating,assigned_by\n' + f"TEST_R_{uuid.uuid4().hex},{e['employee_id']},EV_005,2026-09-29,,dropped,40,,,self\n"
     files = {'employees': ('employees.json', json.dumps(bundle), 'application/json'), 'history': ('history.csv', csv, 'text/csv')}
@@ -75,13 +75,13 @@ async def test_import_new_profile_history_and_atomic_error(client, dataset):
     assert again.json()['revision'] == result.json()['revision']
     assert (await client.post(f"/api/v1/employees/{e['employee_id']}/recommendations")).json()['source'] == 'ai'
     # A profile and invalid history must never be partially applied.
-    e['employee_id'] = 'INVALID_' + uuid.uuid4().hex[:10]
+    e['employee_id'] = 'QA_R2_INVALID_' + uuid.uuid4().hex[:10]
     broken = await client.post('/api/v1/hr/import', files={'employees': ('employees.json', json.dumps(bundle)), 'history': ('history.csv', csv.replace('EV_005', 'UNKNOWN'))})
     assert broken.status_code == 422
     assert (await client.get(f"/api/v1/employees/{e['employee_id']}")).status_code == 404
 
 
-async def test_fallback_and_redis_failure(client, monkeypatch):
+async def test_fallback_and_redis_failure(client, monkeypatch, dataset):
     await login(client, 'hr')
     async def unavailable(*args, **kwargs):
         raise TimeoutError()
@@ -89,7 +89,10 @@ async def test_fallback_and_redis_failure(client, monkeypatch):
         return None
     monkeypatch.setattr(service, 'select_with_ai', unavailable)
     monkeypatch.setattr(service, 'cache_get', cache_miss)
-    result = await client.post('/api/v1/employees/E0002/recommendations')
+    e = deepcopy(dataset[0][1]); e['employee_id'] = 'QA_R2_FALLBACK_' + uuid.uuid4().hex[:8]
+    bundle = {'meta': {'dataset': 'Career Quest', 'version': '1.0', 'as_of_date': '2026-10-01'}, 'employees': [e]}
+    assert (await client.post('/api/v1/hr/import', files={'employees': ('employees.json', json.dumps(bundle))})).status_code == 200
+    result = await client.post('/api/v1/employees/' + e['employee_id'] + '/recommendations')
     assert result.status_code == 200 and result.json()['source'] == 'fallback'
     assert result.json()['steps']
     assert all(len(s['evidence']) >= 3 for s in result.json()['steps'])

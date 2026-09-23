@@ -22,3 +22,5 @@ class CompletionReceipt(Base):
     idempotency_key: Mapped[str] = mapped_column(String(100), primary_key=True)
     event_id: Mapped[str] = mapped_column(ForeignKey('events.event_id'))
     response: Mapped[dict] = mapped_column(JSONB)
+    action: Mapped[str] = mapped_column(String(20), default='complete', server_default='complete')
+    request_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

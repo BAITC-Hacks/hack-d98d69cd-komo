@@ -28,8 +28,10 @@ async def client(monkeypatch):
     from app.features.recommendations import service
     from app.features.recommendations.schemas import ModelPlan, ModelSelection
     async def stub(payload):
-        return ModelPlan(selections=[ModelSelection(event_id=c['event_id'], factors=['grade', 'skill_gap', 'history'], rationale='Тестовая фикстура провайдера') for c in payload['candidates'][:3]])
+        return ModelPlan(selections=[ModelSelection(event_id=c['event_id'], fact_ids=[f['fact_id'] for f in c['facts'][:3]]) for c in payload['candidates'][:3]])
     monkeypatch.setattr(service, 'select_with_ai', stub)
+    # Persisted QA responses must not appear as current real AI in the demo app.
+    monkeypatch.setattr(service, 'PROMPT_VERSION', 'career-quest-test-fixture')
     async with Session() as db:
         app.state.session_secret = (await get_state(db)).session_secret
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test', timeout=15) as client:

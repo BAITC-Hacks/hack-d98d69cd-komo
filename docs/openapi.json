@@ -86,6 +86,31 @@
         }
       }
     },
+    "/api/v1/catalog/role-profiles": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Roles",
+        "operationId": "roles_api_v1_catalog_role_profiles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RoleOption"
+                  },
+                  "type": "array",
+                  "title": "Response Roles Api V1 Catalog Role Profiles Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/employees": {
       "get": {
         "tags": [
@@ -325,6 +350,180 @@
         }
       }
     },
+    "/api/v1/employees/{employee_id}/career-goal": {
+      "patch": {
+        "tags": [
+          "employees"
+        ],
+        "summary": "Goal",
+        "operationId": "goal_api_v1_employees__employee_id__career_goal_patch",
+        "parameters": [
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Employee Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Development"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employees/{employee_id}/activities/{event_id}/start": {
+      "post": {
+        "tags": [
+          "employees"
+        ],
+        "summary": "Begin",
+        "operationId": "begin_api_v1_employees__employee_id__activities__event_id__start_post",
+        "parameters": [
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Employee Id"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Event Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employees/{employee_id}/participations/{record_id}/cancel": {
+      "post": {
+        "tags": [
+          "employees"
+        ],
+        "summary": "Cancel Participation",
+        "operationId": "cancel_participation_api_v1_employees__employee_id__participations__record_id__cancel_post",
+        "parameters": [
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Employee Id"
+            }
+          },
+          {
+            "name": "record_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Record Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/employees/{employee_id}/recommendations": {
       "get": {
         "tags": [
@@ -380,6 +579,16 @@
             "schema": {
               "type": "string",
               "title": "Employee Id"
+            }
+          },
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Refresh"
             }
           }
         ],
@@ -617,6 +826,34 @@
             },
             "type": "array",
             "title": "Preparatory For"
+          },
+          "sessions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sessions"
+          },
+          "participation_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participation Status"
+          },
+          "can_cancel": {
+            "type": "boolean",
+            "title": "Can Cancel",
+            "default": false
+          },
+          "expected_progress": {
+            "type": "number",
+            "title": "Expected Progress",
+            "default": 0
           }
         },
         "type": "object",
@@ -794,6 +1031,27 @@
             },
             "type": "array",
             "title": "Available Events"
+          },
+          "participations": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityOption"
+            },
+            "type": "array",
+            "title": "Participations"
+          },
+          "availability_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Availability Reasons"
+          },
+          "uncovered_critical_skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Uncovered Critical Skills"
           }
         },
         "type": "object",
@@ -995,6 +1253,18 @@
           "in_progress": {
             "type": "integer",
             "title": "In Progress"
+          },
+          "overdue": {
+            "type": "integer",
+            "title": "Overdue"
+          },
+          "planned": {
+            "type": "integer",
+            "title": "Planned"
+          },
+          "cancelled": {
+            "type": "integer",
+            "title": "Cancelled"
           }
         },
         "type": "object",
@@ -1004,12 +1274,19 @@
           "total",
           "completed",
           "missed",
-          "in_progress"
+          "in_progress",
+          "overdue",
+          "planned",
+          "cancelled"
         ],
         "title": "EventParticipation"
       },
       "Evidence": {
         "properties": {
+          "fact_id": {
+            "type": "string",
+            "title": "Fact Id"
+          },
           "factor": {
             "type": "string",
             "enum": [
@@ -1027,6 +1304,7 @@
         },
         "type": "object",
         "required": [
+          "fact_id",
           "factor",
           "text"
         ],
@@ -1077,6 +1355,16 @@
           "maintenance": {
             "type": "boolean",
             "title": "Maintenance"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "profile",
+              "manual",
+              "automatic"
+            ],
+            "title": "Source",
+            "default": "profile"
           }
         },
         "type": "object",
@@ -1087,6 +1375,26 @@
           "maintenance"
         ],
         "title": "Goal"
+      },
+      "GoalInput": {
+        "properties": {
+          "career_goal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CareerGoal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "career_goal"
+        ],
+        "title": "GoalInput"
       },
       "HROverview": {
         "properties": {
@@ -1325,6 +1633,28 @@
         ],
         "title": "LoginInput"
       },
+      "ParticipationResult": {
+        "properties": {
+          "record_id": {
+            "type": "string",
+            "title": "Record Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "development": {
+            "$ref": "#/components/schemas/Development"
+          }
+        },
+        "type": "object",
+        "required": [
+          "record_id",
+          "status",
+          "development"
+        ],
+        "title": "ParticipationResult"
+      },
       "RecommendationResult": {
         "properties": {
           "run_id": {
@@ -1462,6 +1792,54 @@
           "evidence"
         ],
         "title": "RecommendedStep"
+      },
+      "RoleOption": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "Junior",
+              "Middle",
+              "Senior",
+              "Lead"
+            ],
+            "title": "Grade"
+          },
+          "required_skills": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Required Skills"
+          },
+          "critical_skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Critical Skills"
+          },
+          "skill_names": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Skill Names"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "grade",
+          "required_skills",
+          "critical_skills",
+          "skill_names"
+        ],
+        "title": "RoleOption"
       },
       "SkillGain": {
         "properties": {

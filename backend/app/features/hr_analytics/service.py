@@ -5,6 +5,7 @@ from app.core.state import get_state
 from app.core.config import settings
 from app.features.catalog.service import load_catalog
 from app.features.employees.models import Employee
+from app.features.employees.service import effective_profile
 from app.features.development.models import ActivityRecord
 from app.features.development.logic import calculate_development
 from app.features.recommendations.models import RecommendationRun
@@ -28,7 +29,7 @@ async def overview(db: AsyncSession) -> HROverview:
     without = []
     progress = []
     for row in employees:
-        employee = row.data
+        employee = effective_profile(row)
         development = calculate_development(employee, histories[row.employee_id], catalog, state.as_of_date.isoformat(), state.revision)
         progress.append(development.progress)
         for skill in development.skills:
@@ -52,9 +53,9 @@ async def overview(db: AsyncSession) -> HROverview:
     for event_id, event in catalog.events.items():
         rows = participations[event_id]
         participation.append(EventParticipation(event_id=event_id, title=event['title'], total=len(rows), completed=sum(r['status'] == 'completed' for r in rows),
-                                               missed=sum(r['status'] in ('no_show', 'declined', 'dropped') for r in rows), in_progress=sum(r['status'] == 'in_progress' for r in rows)))
+                                               missed=sum(r['status'] in ('no_show', 'declined', 'dropped') for r in rows), in_progress=sum(r['status'] == 'in_progress' for r in rows), overdue=sum(r['status'] == 'overdue' for r in rows), planned=sum(r['status'] == 'planned' for r in rows), cancelled=sum(r['status'] == 'cancelled' for r in rows)))
     return HROverview(as_of_date=state.as_of_date.isoformat(), revision=state.revision, total_employees=len(employees),
                       average_progress=round(sum(progress) / max(1, len(progress)), 1), total_participations=len(records),
-                      completion_rate=round(100 * sum(r.status == 'completed' for r in records) / max(1, len(records)), 1),
+                      completion_rate=round(100 * sum(r.status == 'completed' for r in records) / max(1, sum(r.status not in ('planned', 'cancelled') for r in records)), 1),
                       skill_gaps=sorted([GapCount(skill_id=k, name=catalog.skills[k]['name'], employees=v[0], critical_employees=v[1]) for k, v in gaps.items()], key=lambda x: (-x.employees, x.name)),
                       employees_without_step=without, participation=sorted(participation, key=lambda x: (-x.total, x.title)))

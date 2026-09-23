@@ -11,6 +11,7 @@ from app.core.db import Session, get_db, engine
 from app.core.errors import AppError
 from app.core.state import get_state
 from app.core.cache import cache
+from app.features.catalog.router import router as catalog
 from app.features.identity.router import router as identity
 from app.features.employees.router import router as employees
 from app.features.recommendations.router import router as recommendations
@@ -57,7 +58,7 @@ async def request_policy(request: Request, call_next):
     started = time.monotonic()
     if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
         origin = request.headers.get('origin')
-        if origin and origin.rstrip('/') != settings().app_origin.rstrip('/'):
+        if origin and origin.rstrip('/') not in settings().allowed_origins:
             return JSONResponse(status_code=403, content={'code': 'invalid_origin', 'message': 'Недопустимый источник запроса', 'details': None})
         if request.headers.get('sec-fetch-site') == 'cross-site':
             return JSONResponse(status_code=403, content={'code': 'invalid_origin', 'message': 'Межсайтовый запрос запрещен', 'details': None})
@@ -68,7 +69,7 @@ async def request_policy(request: Request, call_next):
     return response
 
 
-for router in (identity, employees, recommendations, hr, imports):
+for router in (identity, catalog, employees, recommendations, hr, imports):
     app.include_router(router, prefix='/api/v1')
 
 

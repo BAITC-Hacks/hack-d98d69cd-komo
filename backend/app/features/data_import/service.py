@@ -105,7 +105,7 @@ async def import_data(db: AsyncSession, employees_raw: bytes | None, history_raw
         if r['due_date'] and (not event['mandatory'] or r['due_date'] < r['date']):
             raise AppError('invalid_due_date', 'Некорректный дедлайн: ' + r['record_id'], 422)
         existing = existing_records.get(r['record_id'])
-        if existing and existing.data.get('completed_at'):
+        if existing and (existing.data.get('origin') == 'local' or existing.data.get('completed_at')):
             raise AppError('local_completion_conflict', 'Импорт не может перезаписать выполнение, подтвержденное в приложении: ' + r['record_id'], 409)
     ec = eu = hc = hu = 0
     for e in incoming_employees:

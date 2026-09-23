@@ -58,6 +58,10 @@ class ActivityOption(BaseModel):
     can_complete: bool
     record_id: str | None
     preparatory_for: list[str] = Field(default_factory=list)
+    sessions: list[str] = Field(default_factory=list)
+    participation_status: str | None = None
+    can_cancel: bool = False
+    expected_progress: float = 0
 
 
 class Goal(BaseModel):
@@ -65,6 +69,7 @@ class Goal(BaseModel):
     grade: str
     inferred: bool
     maintenance: bool
+    source: Literal['profile', 'manual', 'automatic'] = 'profile'
 
 
 class Development(BaseModel):
@@ -76,6 +81,9 @@ class Development(BaseModel):
     skills: list[SkillState]
     critical_gaps: int
     available_events: list[ActivityOption]
+    participations: list[ActivityOption] = Field(default_factory=list)
+    availability_reasons: list[str] = Field(default_factory=list)
+    uncovered_critical_skills: list[str] = Field(default_factory=list)
 
 
 class HistoryView(BaseModel):
@@ -93,6 +101,12 @@ class CompletionInput(BaseModel):
     idempotency_key: str = Field(min_length=8, max_length=100)
     record_id: str | None = None
     session_date: date | None = None
+
+
+class ParticipationResult(BaseModel):
+    record_id: str
+    status: str
+    development: Development
 
 
 class CompletionResult(BaseModel):

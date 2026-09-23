@@ -18,6 +18,6 @@ async def last_recommendation(employee_id: str, user: User = Depends(current_use
 
 
 @router.post('/{employee_id}/recommendations', response_model=RecommendationResult)
-async def generate_recommendation(employee_id: str, user: User = Depends(current_user), db: AsyncSession = Depends(get_db)):
+async def generate_recommendation(employee_id: str, refresh: bool = False, user: User = Depends(current_user), db: AsyncSession = Depends(get_db)):
     require_employee_access(user, employee_id)
-    return await recommend(db, employee_id)
+    return await recommend(db, employee_id, refresh=refresh)
