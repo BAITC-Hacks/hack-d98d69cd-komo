@@ -156,7 +156,9 @@ def test_repeat_club_uses_different_session(dataset):
 
 
 async def test_explicit_origin_allowlist(client):
-    assert (await client.post('/api/v1/auth/login', headers={'Origin': 'http://localhost:3000'}, json={'username': 'no-user', 'password': 'wrong'})).status_code == 401
+    from app.core.config import settings
+    for origin in settings().allowed_origins:
+        assert (await client.post('/api/v1/auth/login', headers={'Origin': origin}, json={'username': 'no-user', 'password': 'wrong'})).status_code == 401
     assert (await client.post('/api/v1/auth/login', headers={'Origin': 'https://unknown.invalid'}, json={'username': 'no-user', 'password': 'wrong'})).status_code == 403
 
 
