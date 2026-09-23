@@ -17,6 +17,7 @@ async function login(page: Page, username: string, password: string) {
 
 test('full flow: HR import → employee goal → live AI → start → complete → HR', async ({ page }) => {
   const data = JSON.parse(cli(['prepare'])); const id = data.employee_id;
+  data.bundle.employees[0].career_goal.target_grade = 'Middle';
   fs.writeFileSync(path.join(artifactDir, 'last-run.json'), JSON.stringify({ employee_id: id, password: data.password }));
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await login(page, 'hr', process.env.HR_PASSWORD || 'hr-demo-2026');
@@ -34,6 +35,8 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   cli(['account', '--employee-id', id]);
   await login(page, id, data.password);
   await expect(page.getByRole('heading', { name: 'Ваш следующий шаг, QA' })).toBeVisible();
+  const initialDevelopment = await (await page.request.get(`/api/v1/employees/${id}/development`)).json();
+  expect(initialDevelopment.goal.grade).toBe('Middle');
   await page.getByRole('button', { name: 'Изменить цель' }).click();
   await page.getByLabel('Целевая роль').selectOption('Backend Engineer');
   await page.getByLabel('Целевой грейд').selectOption('Senior');
@@ -41,7 +44,9 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   await page.screenshot({ path: path.join(artifactDir, '02-goal.png'), fullPage: true });
   const goalResponse = page.waitForResponse(r => r.url().endsWith('/career-goal') && r.request().method() === 'PATCH');
   await page.getByRole('button', { name: 'Сохранить цель', exact: true }).click();
-  expect((await goalResponse).status()).toBe(200);
+  const savedGoalResponse = await goalResponse; expect(savedGoalResponse.status()).toBe(200);
+  const savedGoal = await savedGoalResponse.json();
+  expect(savedGoal.goal.grade).toBe('Senior'); expect(savedGoal.context_version).not.toBe(initialDevelopment.context_version);
   await expect(page.getByRole('button', { name: /Обновить подбор/ })).toBeEnabled({ timeout: 15000 });
   const aiResponse = page.waitForResponse(r => r.url().includes('/recommendations?refresh=true') && r.request().method() === 'POST');
   await page.getByRole('button', { name: /Обновить подбор/ }).click();
