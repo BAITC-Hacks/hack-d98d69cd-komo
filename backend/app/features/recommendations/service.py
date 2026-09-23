@@ -17,7 +17,7 @@ from app.features.development.logic import history_facts, rank_candidates
 from app.features.recommendations.models import RecommendationRun
 from app.features.recommendations.schemas import ModelPlan, RecommendationResult, RecommendedStep, Evidence, RecommendationState
 
-PROMPT_VERSION = 'career-quest-4'
+PROMPT_VERSION = 'career-quest-5'
 logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = """You are Career Quest, a development navigator. Select 1-3 DISTINCT event_ids exclusively from eligible candidates.
 Optimize critical target skill gaps and useful progress, considering current grade, target requirements AND participation history.
@@ -71,31 +71,43 @@ async def select_with_ai(payload: dict) -> ModelPlan:
 
 def evidence_for(employee, development, event, history, catalog):
     facts = history_facts(history, event, catalog, development.as_of_date)
-    gaps = '; '.join(f'{g.name}: {g.before} → {g.after}, ' + (f'цель {g.required}' if g.required else 'дополнительный навык вне требований цели') for g in event.gains)
-    hist = (f"В похожих активностях завершено {facts['completed']}; пропусков, отказов и прерываний {facts['missed']} из {facts['related']}."
+    gaps = '; '.join(f'{g.name}: {g.before} → {g.after}, ' + (f'для вашей цели нужен уровень {g.required}' if g.required else 'этот навык не обязателен для выбранной цели') for g in event.gains)
+    hist = (f"Участий в похожих активностях: {facts['related']}. Завершено: {facts['completed']}; пропусков, отказов и прерываний: {facts['missed']}."
             if facts['related'] else ('Похожих активностей в истории нет.' if facts['total'] else 'Истории участия пока нет.'))
     if facts['total']:
-        hist += f" У этой активности за последние 180 дней: {facts['same_event_recent_missed']} пропусков, отказов и прерываний."
+        hist += f" За последние 180 дней вы пропустили, отклонили или прервали эту активность {facts['same_event_recent_missed']} раз."
         if facts['same_event_last_date']:
             hist += f" Последнее участие: {facts['same_event_last_date']}."
-        hist += f" В таком формате завершено {facts['format_completed']}; неуспешных участий за 180 дней: {facts['format_recent_missed']}."
+        hist += f" В таком формате завершено {facts['format_completed']}; пропусков, отказов и прерываний за 180 дней: {facts['format_recent_missed']}."
         if facts['format_feedback_count']:
-            hist += f" Средняя оценка формата: {facts['format_feedback_mean']}/5 ({facts['format_feedback_count']} отзывов)."
+            hist += f" Средняя оценка занятий в таком формате: {facts['format_feedback_mean']:g} из 5 (отзывов: {facts['format_feedback_count']})."
         if facts['related_score_count']:
-            hist += f" Средний результат похожих завершенных активностей: {facts['related_score_mean']}/100 ({facts['related_score_count']} оценок)."
+            hist += f" Средний результат похожих завершенных активностей: {facts['related_score_mean']:g} из 100 (оценок: {facts['related_score_count']})."
     critical = [g.name for g in event.gains if any(s.skill_id == g.skill_id and s.critical and s.gap > 0 for s in development.skills)]
-    target = f'Цель: {development.goal.role} · {development.goal.grade}. '
-    target += ('Закрывает критический разрыв: ' + ', '.join(critical) + '. ') if critical else ('Уменьшает разрыв по навыкам цели. ' if event.expected_progress > development.progress else 'Готовит допуск к следующему шагу. ')
-    target += f'Ожидаемое соответствие: {development.progress}% → {event.expected_progress}%.'
-    if development.uncovered_critical_skills:
-        target += ' Для критических навыков ' + ', '.join(development.uncovered_critical_skills) + ' сейчас нет допустимого прямого шага в каталоге.'
+    target = f'Ваша цель — {development.goal.grade} {development.goal.role}. '
+    target += ('Поможет развить основные навыки для этой цели: ' + ', '.join(critical) + '. ') if critical else ('Поможет развить навыки, которые нужны для этой цели. ' if event.expected_progress > development.progress else 'Поможет подготовиться к другим активностям для этой цели. ')
+    target += f'По расчету программы соответствие требованиям изменится с {development.progress}% до {event.expected_progress}%.'
     if event.preparatory_for:
-        target += ' После завершения открывает участие в ' + ', '.join(catalog.events[k]['title'] + (f' (сессия {event.preparatory_sessions[k]})' if k in event.preparatory_sessions else '') for k in event.preparatory_for) + '.'
+        target += ' После завершения вы сможете выбрать ' + ', '.join(catalog.events[k]['title'] + (f' (сессия {event.preparatory_sessions[k]})' if k in event.preparatory_sessions else '') for k in event.preparatory_for) + '.'
         if event.preparatory_critical_skills:
-            target += ' Следующий шаг развивает критические навыки: ' + ', '.join(catalog.skills[k]['name'] for k in event.preparatory_critical_skills) + '.'
-    texts = [('grade', f"Текущая роль {employee['role']}, грейд {employee['grade']}: требования к участию выполнены."),
+            target += ' Это поможет дальше развивать основные навыки для вашей цели: ' + ', '.join(catalog.skills[k]['name'] for k in event.preparatory_critical_skills) + '.'
+    texts = [('grade', f"Активность подходит для вашей роли {employee['role']} и уровня {employee['grade']}. Ваших текущих навыков достаточно, чтобы начать."),
              ('skill_gap', gaps), ('history', hist), ('target_requirements', target)]
     return [Evidence(fact_id=f'{event.event_id}:{factor}', factor=factor, text=text) for factor, text in texts]
+
+
+def benefit_for(development, event, catalog):
+    useful = [g.name for g in event.gains if g.before < g.required]
+    goal = f'{development.goal.grade} {development.goal.role}'
+    if useful:
+        names = ', '.join(useful)
+        if len(useful) == 1:
+            return f'Для цели «{goal}» вам нужно развить навык «{names}». Эта активность поможет над ним поработать.'
+        return f'Для цели «{goal}» вам нужно развить эти навыки: {names}. Здесь вы сможете над ними поработать.'
+    if event.preparatory_for:
+        titles = ', '.join('«' + catalog.events[k]['title'] + '»' for k in event.preparatory_for)
+        return f'Поможет подготовиться к следующему обучению: {titles}. Оно развивает навыки для вашей цели — {goal}.'
+    return f'Поможет развить навыки для вашей цели — {goal}.'
 
 
 async def latest(db: AsyncSession, employee_id: str) -> RecommendationState:
@@ -145,11 +157,11 @@ async def recommend(db: AsyncSession, employee_id: str, refresh: bool = False) -
             ids = validate_plan(plan, {e.event_id: evidence_for(employee, development, e, history, catalog) for e in ranked})
             selected_facts = {s.event_id: set(s.fact_ids) for s in plan.selections}
             source = 'ai'
-            message = 'AI выбрал следующие шаги; факты и ожидаемый прирост проверены системой.'
+            message = 'Рекомендации подобраны с учетом вашей цели, навыков и истории участия.'
             actions.extend(['Модель сопоставила варианты', 'Выбор проверен по каталогу и требованиям'])
         except (OpenAIError, TimeoutError, ValueError, ValidationError) as error:
             logger.warning('AI unavailable: type=%s status=%s; validated fallback for %s', type(error).__name__, getattr(error, 'status_code', None), employee_id)
-            message = 'AI сейчас недоступен. Показан резервный подбор по критическим разрывам, пользе и истории участия.'
+            message = 'AI сейчас недоступен. Пока предлагаем активности по правилам подбора: с учетом нужных навыков, вашей цели и истории участия.'
             actions.append('Включен резервный многокритериальный подбор')
     steps = []
     by_id = {e.event_id: e for e in ranked}
@@ -158,7 +170,7 @@ async def recommend(db: AsyncSession, employee_id: str, refresh: bool = False) -
         evidence = evidence_for(employee, development, event, history, catalog)
         if event_id in selected_facts:
             evidence = [f for f in evidence if f.fact_id in selected_facts[event_id]]
-        explanation = ' '.join(f.text for f in evidence if f.factor in ('skill_gap', 'target_requirements'))
+        explanation = benefit_for(development, event, catalog)
         steps.append(RecommendedStep(activity=event, explanation=explanation, evidence=evidence))
     await get_state(db, lock=True)
     current = (await context_for(db, employee_id))[3]

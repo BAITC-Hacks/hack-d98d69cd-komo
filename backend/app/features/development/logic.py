@@ -138,9 +138,9 @@ def calculate_development(employee: dict, history: list[dict], catalog: Catalog,
         if progress == 100:
             reasons = ['Требования выбранной цели уже выполнены. Можно выбрать новую цель.']
         else:
-            labels = {'completed': 'Уже пройдены', 'schedule': 'Нет доступных сессий', 'prerequisites': 'Не выполнены требования к участию', 'cap': 'Достигнут потолок развиваемых навыков'}
+            labels = {'completed': 'Уже пройдены', 'schedule': 'Нет доступных сессий', 'prerequisites': 'Сначала нужно подготовиться', 'cap': 'Ваш уровень уже выше того, которому учит активность'}
             reasons = [f'{labels[k]}: {v}.' for k, v in exclusions.items() if v]
-            reasons.append('Среди оставшихся активностей нет шага, который уменьшает разрыв до цели или открывает подготовительный переход.')
+            reasons.append('В каталоге пока нет других активностей, которые помогут развить нужные вам навыки или подготовиться к дальнейшему обучению.')
     uncovered = [s.name for s in skills if s.critical and s.gap > 0 and not any(any(g.skill_id == s.skill_id and g.after > g.before for g in e.gains) for e in direct)]
     return Development(employee_id=employee['employee_id'], as_of_date=as_of, revision=revision, goal=goal,
                        context_version=context_version(employee, history, catalog, as_of),

@@ -139,7 +139,7 @@ async def test_unknown_model_facts_fall_back(client, participant, monkeypatch):
     monkeypatch.setattr(service, 'select_with_ai', invalid)
     r = await client.post('/api/v1/employees/' + participant['employee_id'] + '/recommendations?refresh=true')
     assert r.status_code == 200 and r.json()['source'] == 'fallback'
-    assert r.json()['steps'] and 'резервный' in r.json()['message'].lower()
+    assert r.json()['steps'] and 'ai сейчас недоступен' in r.json()['message'].lower()
 
 
 def test_repeat_club_uses_different_session(dataset):

@@ -62,7 +62,7 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   expect(ai.source).toBe('ai'); expect(ai.cached).toBe(false); expect(ai.duration_ms).toBeLessThan(10000);
   expect(ai.steps.length).toBeGreaterThan(0);
   expect(ai.steps.every((s: { evidence: { factor: string }[] }) => new Set(s.evidence.map(f => f.factor)).size >= 3)).toBe(true);
-  await page.getByText('Почему этот шаг', { exact: false }).first().click();
+  await page.getByText('Почему вам это подходит', { exact: false }).first().click();
   await page.screenshot({ path: path.join(artifactDir, '03-ai.png'), fullPage: true });
   const selected = ai.steps[0].activity;
   expect(selected.format).toBe('self_paced');
