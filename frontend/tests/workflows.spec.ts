@@ -69,6 +69,22 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: selected.title, exact: true }) });
   await card.getByRole('button', { name: 'Начать →', exact: true }).click();
   const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible();
+  // Opening supplementary reading must not start/complete the catalog course.
+  expect(selected.resources.length).toBeGreaterThan(0);
+  const reading = selected.resources[0];
+  await expect(card.getByRole('link', { name: /^Открыть материал:/ }).first()).toHaveAttribute('href', reading.url);
+  const beforeReading = await (await page.request.get(`/api/v1/employees/${id}/development`)).json();
+  const popupPromise = page.waitForEvent('popup');
+  await dialog.getByRole('link', { name: /^Открыть материал:/ }).first().click();
+  const materialPage = await popupPromise;
+  await materialPage.waitForLoadState('domcontentloaded');
+  expect(new URL(materialPage.url()).hostname).toBe(new URL(reading.url).hostname);
+  await materialPage.close();
+  const afterReading = await (await page.request.get(`/api/v1/employees/${id}/development`)).json();
+  expect(afterReading.skills).toEqual(beforeReading.skills);
+  expect(afterReading.progress).toBe(beforeReading.progress);
+  expect(afterReading.participations).toEqual(beforeReading.participations);
+  await expect(dialog.getByRole('button', { name: 'Начать активность', exact: true })).toBeEnabled();
   const before = await page.getByRole('progressbar', { name: 'Соответствие карьерной цели', includeHidden: true }).getAttribute('aria-valuenow');
   const startResponse = page.waitForResponse(r => r.url().endsWith(`/${selected.event_id}/start`));
   await dialog.getByRole('button', { name: 'Начать активность', exact: true }).click();
@@ -123,7 +139,7 @@ test('full flow: HR import → employee goal → live AI → start → complete 
   await page.screenshot({ path: path.join(artifactDir, '10-planned.png') });
   await planning.getByRole('button', { name: 'Отменить участие', exact: true }).click();
   await expect(page.getByText('Участие отменено.', { exact: false })).toBeVisible();
-  fs.writeFileSync(path.join(artifactDir, 'flow-result.json'), JSON.stringify({ employee_id: id, ai_source: ai.source, ai_ms: ai.duration_ms, other_employee_remains_ready: otherAfter.status === 'ready', qa_does_not_change_hr_totals: true, selected_event: selected.event_id, next_events: next.steps.map((s: { activity: { event_id: string } }) => s.activity.event_id), before: completed.before_progress, after: completed.development.progress, record_id: completed.record_id, page_errors: errors }, null, 2));
+  fs.writeFileSync(path.join(artifactDir, 'flow-result.json'), JSON.stringify({ employee_id: id, ai_source: ai.source, ai_ms: ai.duration_ms, other_employee_remains_ready: otherAfter.status === 'ready', qa_does_not_change_hr_totals: true, selected_event: selected.event_id, opened_resource: reading.url, reading_does_not_change_progress: true, next_events: next.steps.map((s: { activity: { event_id: string } }) => s.activity.event_id), before: completed.before_progress, after: completed.development.progress, record_id: completed.record_id, page_errors: errors }, null, 2));
   expect(errors).toEqual([]);
 });
 

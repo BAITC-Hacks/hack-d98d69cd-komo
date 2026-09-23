@@ -17,7 +17,7 @@ from app.features.development.logic import history_facts, rank_candidates
 from app.features.recommendations.models import RecommendationRun
 from app.features.recommendations.schemas import ModelPlan, RecommendationResult, RecommendedStep, Evidence, RecommendationState
 
-PROMPT_VERSION = 'career-quest-5'
+PROMPT_VERSION = 'career-quest-6'
 logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = """You are Career Quest, a development navigator. Select 1-3 DISTINCT event_ids exclusively from eligible candidates.
 Optimize critical target skill gaps and useful progress, considering current grade, target requirements AND participation history.
@@ -47,7 +47,7 @@ def model_payload(employee, development, ranked, history, catalog) -> dict:
         'profile': {k: employee[k] for k in ('role', 'grade', 'tenure_months', 'work_format')},
         'goal': development.goal.model_dump(),
         'skills': [s.model_dump() for s in development.skills],
-        'candidates': [e.model_dump(exclude={'record_id'}) | {
+        'candidates': [e.model_dump(exclude={'record_id', 'resources'}) | {
             'history': history_facts(history, e, catalog, development.as_of_date),
             'facts': [f.model_dump() for f in evidence_for(employee, development, e, history, catalog)]} for e in ranked],
     }

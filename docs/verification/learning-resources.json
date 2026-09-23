@@ -1,0 +1,21 @@
+{
+  "employee_id": "QA_R3_b1c9e61292_FLOW",
+  "ai_source": "ai",
+  "ai_ms": 3503,
+  "other_employee_remains_ready": true,
+  "qa_does_not_change_hr_totals": true,
+  "selected_event": "EV_009",
+  "opened_resource": "https://learn.microsoft.com/en-us/azure/architecture/guide/",
+  "reading_does_not_change_progress": true,
+  "next_events": [
+    "EV_012"
+  ],
+  "before": 92,
+  "after": 94,
+  "page_errors": [],
+  "backend_tests_passed": 66,
+  "browser_tests_passed": 3,
+  "activities_with_resources": 30,
+  "total_catalog_activities": 40,
+  "prompt_version": "career-quest-6"
+}

@@ -1,6 +1,7 @@
 import { dateLabel, type RecommendationResult, type ActivityOption } from '@/shared/api/client';
 import { Button, Empty, Loading, Notice, Tag } from '@/shared/ui';
 import s from './recommendations.module.css';
+import { LearningResources } from '@/features/activities/learning-resources';
 
 const factorLabels: Record<string, string> = { grade: 'Подходит ли вам эта активность', skill_gap: 'Что вы сможете развить', history: 'Что учтено из вашего опыта', target_requirements: 'Как это связано с вашей целью' };
 export const formatLabels: Record<string, string> = { online: 'Онлайн', offline: 'Очно', self_paced: 'В своем темпе' };
@@ -26,6 +27,7 @@ export function Recommendations({ result, loading, readOnly, completing, onOpen,
           <span className={s.gainHint}>{g.required ? `Для цели нужен уровень ${g.required}` : 'Дополнительный навык'}</span>
         </div>)}<div className={s.progress}>{result.stale ? <>Предыдущий прогноз: <strong>{percent(step.activity.expected_progress)}%</strong>. Обновите рекомендации.</> : <>Соответствие требованиям цели: <strong>{percent(currentProgress)}% → {percent(step.activity.expected_progress)}%</strong></>}</div><div className={s.gainHint}>По расчету программы для этой активности</div></div>
         <details className={s.details}><summary>Почему вам это подходит</summary><div className={s.facts}>{step.evidence.map(f => <div className={s.fact} key={f.factor}><strong>{factorLabels[f.factor]}</strong>{f.text}</div>)}</div></details>
+        <LearningResources activity={step.activity} />
         {!readOnly && <Button variant="secondary" className={s.action} disabled={!!completing || result.stale} onClick={() => onOpen(step.activity)}>{completing === step.activity.event_id ? 'Сохраняем…' : step.activity.record_id ? 'Продолжить →' : step.activity.format === 'self_paced' ? 'Начать →' : 'Запланировать участие →'}</Button>}
         {!readOnly && !step.activity.record_id && step.activity.format !== 'self_paced' && <div className={s.future}>Добавим активность в ваш план. На само мероприятие нужно записаться отдельно.</div>}
         {step.activity.record_id && !step.activity.can_complete && <div className={s.future}>Уже в вашем плане. Отметить выполнение можно после занятия.</div>}

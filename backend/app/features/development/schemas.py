@@ -46,12 +46,21 @@ class SkillGain(BaseModel):
     required: int
 
 
+class LearningResource(BaseModel):
+    title: str
+    url: str = Field(pattern=r'^https://[^\s]+$')
+    source: str
+    description: str
+    language: str
+
+
 class ActivityOption(BaseModel):
     event_id: str
     title: str
     description: str
     format: str
     duration_hours: float
+    resources: list[LearningResource] = Field(default_factory=list)
     next_session: str | None
     action: Literal['start', 'continue']
     gains: list[SkillGain]

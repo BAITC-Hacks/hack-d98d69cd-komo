@@ -1,6 +1,7 @@
 """Shared, deterministic domain rules. No database, HTTP or model calls."""
 from datetime import date, timedelta
 from app.features.catalog.service import Catalog
+from app.features.catalog.resources import EVENT_RESOURCES
 from app.features.development.context import context_version
 from app.features.development.schemas import Development, Goal, SkillState, SkillGain, ActivityOption
 
@@ -68,6 +69,7 @@ def activity_option(event, levels, requirements, catalog, as_of, history, active
         event_id=event['event_id'], title=event['title'], description=event['description'], format=event['format'],
         duration_hours=event['duration_hours'], next_session=active['date'] if active and event['format'] != 'self_paced' else (sessions[0] if sessions else None),
         action='continue' if active else 'start', gains=gains,
+        resources=EVENT_RESOURCES.get(event['event_id'], []),
         can_complete=event['format'] == 'self_paced' or (active['date'] <= as_of if active else as_of in sessions),
         record_id=active['record_id'] if active else None, sessions=sessions,
         participation_status=active['status'] if active else None,

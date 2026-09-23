@@ -919,6 +919,13 @@
             "type": "number",
             "title": "Duration Hours"
           },
+          "resources": {
+            "items": {
+              "$ref": "#/components/schemas/LearningResource"
+            },
+            "type": "array",
+            "title": "Resources"
+          },
           "next_session": {
             "anyOf": [
               {
@@ -1806,6 +1813,40 @@
           "message"
         ],
         "title": "ImportResult"
+      },
+      "LearningResource": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://[^\\s]+$",
+            "title": "Url"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "url",
+          "source",
+          "description",
+          "language"
+        ],
+        "title": "LearningResource"
       },
       "LoginInput": {
         "properties": {

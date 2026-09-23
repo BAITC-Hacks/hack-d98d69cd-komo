@@ -350,6 +350,8 @@ export interface components {
             format: string;
             /** Duration Hours */
             duration_hours: number;
+            /** Resources */
+            resources?: components["schemas"]["LearningResource"][];
             /** Next Session */
             next_session: string | null;
             /**
@@ -671,6 +673,19 @@ export interface components {
             employee_ids: string[];
             /** Message */
             message: string;
+        };
+        /** LearningResource */
+        LearningResource: {
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+            /** Source */
+            source: string;
+            /** Description */
+            description: string;
+            /** Language */
+            language: string;
         };
         /** LoginInput */
         LoginInput: {

@@ -24,7 +24,7 @@ def test_outbound_payload_excludes_employee_identity(dataset):
     payload = model_payload(employee, development, rank_candidates(development, history, catalog), history, catalog)
     import json
     encoded = json.dumps(payload)
-    for forbidden in ['full_name', 'employee_id', 'manager_id', 'record_id', employee['full_name'], employee['employee_id']]:
+    for forbidden in ['full_name', 'employee_id', 'manager_id', 'record_id', 'resources', 'https://', employee['full_name'], employee['employee_id']]:
         assert forbidden not in encoded
 
 
