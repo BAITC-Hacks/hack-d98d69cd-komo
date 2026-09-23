@@ -342,6 +342,12 @@ export interface components {
             record_id: string | null;
             /** Preparatory For */
             preparatory_for?: string[];
+            /** Preparatory Critical Skills */
+            preparatory_critical_skills?: string[];
+            /** Preparatory Sessions */
+            preparatory_sessions?: {
+                [key: string]: string;
+            };
             /** Sessions */
             sessions?: string[];
             /** Participation Status */

@@ -859,6 +859,20 @@
             "type": "array",
             "title": "Preparatory For"
           },
+          "preparatory_critical_skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Preparatory Critical Skills"
+          },
+          "preparatory_sessions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Preparatory Sessions"
+          },
           "sessions": {
             "items": {
               "type": "string"

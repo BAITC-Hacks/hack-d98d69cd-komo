@@ -2,7 +2,7 @@
 import hashlib
 import json
 
-LOGIC_VERSION = 'development-3'
+LOGIC_VERSION = 'development-4'
 
 
 def digest(value) -> str:

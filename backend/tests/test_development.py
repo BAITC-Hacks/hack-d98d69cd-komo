@@ -114,3 +114,39 @@ def test_local_completion_on_review_day_is_after_loaded_baseline(dataset):
     r = record('EV_004', date='2026-09-20')
     r.update(effective_date='2026-10-01', completed_at='2026-09-23T09:00:00Z')
     assert effective_skills(e, [r], catalog)['SK_TEAMWORK'] == 1
+
+
+def preparation_profile(dataset):
+    e = deepcopy(next(e for e in dataset[0] if e['role'] == 'Frontend Engineer' and e['grade'] == 'Middle'))
+    catalog = deepcopy(dataset[2])
+    e['career_goal'] = {'target_role': 'Frontend Engineer', 'target_grade': 'Senior'}
+    e['skills'].update(catalog.roles[('Frontend Engineer', 'Senior')]['required_skills'])
+    e['skills'].update(SK_TYPESCRIPT=2, SK_WEB_PERFORMANCE=3, SK_PUBLIC_SPEAKING=0)
+    # Isolate a genuinely preparatory gain, which does not close the target itself.
+    catalog.roles[('Frontend Engineer', 'Senior')]['required_skills']['SK_TYPESCRIPT'] = 2
+    return e, catalog
+
+
+def test_preparation_for_critical_gap_beats_unrelated_direct_step(dataset):
+    e, catalog = preparation_profile(dataset)
+    d = calculate_development(e, [], catalog, '2026-10-01', 1)
+    options = {o.event_id: o for o in d.available_events}
+    assert 'EV_036' in options and 'EV_013' in options and 'EV_014' not in options
+    prep = options['EV_013']
+    assert prep.expected_progress == d.progress
+    assert prep.preparatory_for == ['EV_014']
+    assert prep.preparatory_critical_skills == ['SK_WEB_PERFORMANCE']
+    assert prep.preparatory_sessions == {'EV_014': '2026-11-09'}
+    assert rank_candidates(d, [], catalog)[0].event_id == 'EV_013'
+
+
+@pytest.mark.parametrize('failure', ['past_followup', 'same_day', 'capped', 'completed', 'missing_prerequisite'])
+def test_impossible_preparation_is_excluded(dataset, failure):
+    e, catalog = preparation_profile(dataset); history = []
+    if failure == 'past_followup': catalog.events['EV_014']['upcoming_sessions'] = ['2026-10-02']
+    if failure == 'same_day': catalog.events['EV_014']['upcoming_sessions'] = ['2026-10-21']
+    if failure == 'capped': catalog.events['EV_014']['develops_skills'][0]['max_level'] = 3
+    if failure == 'completed': history = [record('EV_014', date='2026-01-01')]
+    if failure == 'missing_prerequisite': catalog.events['EV_014']['prerequisites']['SK_CLOUD'] = 5
+    d = calculate_development(e, history, catalog, '2026-10-01', 1)
+    assert 'EV_013' not in {o.event_id for o in d.available_events}

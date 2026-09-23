@@ -58,6 +58,8 @@ class ActivityOption(BaseModel):
     can_complete: bool
     record_id: str | None
     preparatory_for: list[str] = Field(default_factory=list)
+    preparatory_critical_skills: list[str] = Field(default_factory=list)
+    preparatory_sessions: dict[str, str] = Field(default_factory=dict)
     sessions: list[str] = Field(default_factory=list)
     participation_status: str | None = None
     can_cancel: bool = False

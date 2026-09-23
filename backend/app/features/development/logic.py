@@ -99,19 +99,29 @@ def calculate_development(employee: dict, history: list[dict], catalog: Catalog,
             exclusions['cap'] += 1
             continue
         available.append(option)
-    direct = [e for e in available if any(g.before < g.required for g in e.gains)]
-    if not direct:
-        for option in available:
-            future_levels = levels | {g.skill_id: g.after for g in option.gains}
-            for later in audience:
-                if later['event_id'] == option.event_id:
-                    continue
-                was_blocked = any(levels.get(k, 0) < v for k, v in later['prerequisites'].items())
-                opens = all(future_levels.get(k, 0) >= v for k, v in later['prerequisites'].items())
-                useful = any(g.before < g.required for g in event_gains(later, future_levels, requirements, catalog))
-                if was_blocked and opens and useful:
-                    option.preparatory_for.append(later['event_id'])
-        direct = [e for e in available if e.preparatory_for]
+    # Consider one-hop preparation alongside direct gains, not only as a last resort.
+    critical_ids = set(target['critical_skills'])
+    for option in available:
+        future_levels = levels | {g.skill_id: g.after for g in option.gains}
+        ready_on = max(as_of, option.next_session or as_of)
+        for later in audience:
+            if later['event_id'] == option.event_id:
+                continue
+            was_blocked = any(levels.get(k, 0) < v for k, v in later['prerequisites'].items())
+            opens = all(future_levels.get(k, 0) >= v for k, v in later['prerequisites'].items())
+            useful = [g for g in event_gains(later, future_levels, requirements, catalog) if g.before < g.required]
+            # A dated preparatory session must precede the follow-up session.
+            later_dates = sorted(d for d in later['upcoming_sessions'] if d >= ready_on and
+                                 (catalog.events[option.event_id]['format'] == 'self_paced' or d > ready_on))
+            if later['format'] != 'self_paced' and not later_dates:
+                continue
+            if was_blocked and opens and useful:
+                option.preparatory_for.append(later['event_id'])
+                option.preparatory_critical_skills.extend(g.skill_id for g in useful if g.skill_id in critical_ids)
+                if later['format'] != 'self_paced':
+                    option.preparatory_sessions[later['event_id']] = later_dates[0]
+        option.preparatory_critical_skills = sorted(set(option.preparatory_critical_skills))
+    direct = [e for e in available if e.preparatory_for or any(g.before < g.required for g in e.gains)]
     reasons = []
     if not direct:
         if progress == 100:
@@ -145,5 +155,6 @@ def rank_candidates(development: Development, history: list[dict], catalog: Cata
         critical_gain = sum(max(0, min(g.after, g.required) - g.before) for g in event.gains if g.skill_id in critical)
         facts = history_facts(history, event, catalog)
         history_factor = (facts['completed'] - facts['missed']) / max(1, facts['related'])
-        return (5 * critical_gain + 2 * gain + history_factor + bool(event.preparatory_for), -event.duration_hours, event.event_id)
+        return (bool(critical_gain), critical_gain, bool(event.preparatory_critical_skills),
+                2 * gain + history_factor + bool(event.preparatory_for), -event.duration_hours, event.event_id)
     return sorted(development.available_events, key=score, reverse=True)
