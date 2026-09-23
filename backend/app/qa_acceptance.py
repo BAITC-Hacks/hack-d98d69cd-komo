@@ -108,10 +108,40 @@ def verify_ai(repeats):
         raise SystemExit('Live acceptance failed; inspect individual cases, do not count fallback as AI.')
 
 
+async def verify_history():
+    """Hold candidate order constant, then reverse it: the model must use context."""
+    from app.core.db import Session
+    from app.features.catalog.service import load_catalog
+    from app.features.data_import.service import parse_history
+    from app.features.development.logic import calculate_development
+    from app.features.recommendations.service import model_payload, select_with_ai, validate_plan, evidence_for
+    data = prepare(); history = parse_history(data['history_csv'].encode()); report = []
+    async with Session() as db:
+        catalog = await load_catalog(db)
+    for profile in data['bundle']['employees'][6:]:
+        case = profile['employee_id'].rsplit('_', 1)[1]
+        records = [r for r in history if r['employee_id'] == profile['employee_id']]
+        development = calculate_development(profile, records, catalog, '2026-10-01', 1)
+        for reverse in (False, True):
+            ordered = sorted(development.available_events, key=lambda e: e.event_id, reverse=reverse)
+            payload = model_payload(profile, development, ordered, records, catalog)
+            started = time.monotonic()
+            plan = await select_with_ai(payload)
+            ids = validate_plan(plan, {e.event_id: evidence_for(profile, development, e, records, catalog) for e in ordered})
+            expected = 'EV_007' if case.endswith('ONLINE') else 'EV_006'
+            valid = len(ordered) >= 2 and ids[0] == expected and expected + ':history' in plan.selections[0].fact_ids
+            report.append({'case': case, 'candidate_order': [e.event_id for e in ordered], 'chosen': ids,
+                           'expected_first': expected, 'quality_pass': valid, 'seconds': round(time.monotonic() - started, 3)})
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    if not all(r['quality_pass'] and r['seconds'] < 10 for r in report):
+        raise SystemExit('History/order acceptance failed.')
+
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(); parser.add_argument('command', choices=['prepare', 'account', 'verify-ai'])
+    parser = argparse.ArgumentParser(); parser.add_argument('command', choices=['prepare', 'account', 'verify-ai', 'verify-history'])
     parser.add_argument('--employee-id'); parser.add_argument('--repeats', type=int, choices=range(1, 6), default=3)
     args = parser.parse_args()
     if args.command == 'prepare': print(json.dumps(prepare(), ensure_ascii=False))
     elif args.command == 'account': asyncio.run(account(args.employee_id or ''))
+    elif args.command == 'verify-history': asyncio.run(verify_history())
     else: verify_ai(args.repeats)
